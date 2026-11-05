@@ -13,6 +13,7 @@ import type { Estimate, Locale, QuoteItem } from "../types"
 import { shipmentHub } from "./realtime"
 import { buildStatusMachine, type StatusMachine } from "./statuses"
 import { shippingGuardApplies, shippingGuardMessage } from "./shipping-guard"
+import { decideShipmentCreation, type CreateMode } from "./create-guard"
 import { generateTrackingNumber } from "./tracking-number"
 
 export const ZONE_RATE_MODULE = "zoneRate"
@@ -146,6 +147,7 @@ async function emit(container: MedusaContainer, name: string, data: Record<strin
 
 const ORDER_FIELDS = [
   "id",
+  "status",
   "display_id",
   "email",
   "currency_code",
@@ -182,21 +184,41 @@ async function loadOrder(container: MedusaContainer, orderId: string) {
 
 /**
  * Creates the shipment record of an order (status "diproses") with a new
- * tracking number, or returns the open one it already has. Weight, price,
- * zone and destination are snapshots.
+ * tracking number. Weight, price, zone and destination are snapshots.
+ * Rules per mode in ./create-guard.ts: "manual" (default, Admin) returns the
+ * open shipment or refuses closed orders; "auto" (subscriber) returns null
+ * instead of creating for closed orders or orders that had a shipment before.
  */
 export async function createShipmentForOrder(
   container: MedusaContainer,
-  input: { order_id: string; actor?: Actor; metadata?: Record<string, unknown> }
-): Promise<ShipmentRecord> {
+  input: { order_id: string; actor?: Actor; metadata?: Record<string, unknown>; mode?: "manual" }
+): Promise<ShipmentRecord>
+export async function createShipmentForOrder(
+  container: MedusaContainer,
+  input: { order_id: string; actor?: Actor; metadata?: Record<string, unknown>; mode: "auto" }
+): Promise<ShipmentRecord | null>
+export async function createShipmentForOrder(
+  container: MedusaContainer,
+  input: { order_id: string; actor?: Actor; metadata?: Record<string, unknown>; mode?: CreateMode }
+): Promise<ShipmentRecord | null> {
   return withLock(container, `zone-rate:order:${input.order_id}`, async () => {
     const svc = service(container)
     const machine = statusMachine(container)
     const existing: ShipmentRecord[] = await svc.listZoneRateShipments({ order_id: input.order_id })
-    const open = existing.find((s) => s.status !== "dibatalkan" && !machine.statuses.get(s.status)?.medusa?.startsWith("cancel"))
-    if (open) return open
+    const isOpen = (s: ShipmentRecord) => s.status !== "dibatalkan" && !machine.statuses.get(s.status)?.medusa?.startsWith("cancel")
 
     const order = await loadOrder(container, input.order_id)
+    const decision = decideShipmentCreation({
+      mode: input.mode ?? "manual",
+      orderStatus: order.status,
+      existing: existing.map((s) => ({ id: s.id, open: isOpen(s) })),
+    })
+    if (decision.action === "return_existing") return existing.find((s) => s.id === decision.shipment_id)!
+    if (decision.action === "skip") return null
+    if (decision.action === "refuse") {
+      throw new MedusaError(MedusaError.Types.NOT_ALLOWED, `Order #${order.display_id ?? order.id} is ${order.status}: no shipment can be created`)
+    }
+
     const method = order.shipping_methods?.[0]
     let serviceId: string | null = null
     if (method?.shipping_option_id) {

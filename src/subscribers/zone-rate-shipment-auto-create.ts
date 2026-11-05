@@ -15,8 +15,11 @@ export default async function zoneRateShipmentAutoCreate({ event, container }: S
   try {
     const orderId = event.name === "order.placed" ? event.data.id : await orderOfPayment(container, event.data.id)
     if (!orderId || !(await usesZoneRate(container, orderId))) return
-    const shipment = await createShipmentForOrder(container, { order_id: orderId })
-    logger.info(`[zone-rate] shipment ${shipment.tracking_number} for order ${orderId}`)
+    // "auto": nothing for canceled/archived/draft orders or orders that had a shipment before
+    // (duplicate or replayed events stay idempotent)
+    const shipment = await createShipmentForOrder(container, { order_id: orderId, mode: "auto" })
+    if (shipment) logger.info(`[zone-rate] shipment ${shipment.tracking_number} for order ${orderId}`)
+    else logger.debug(`[zone-rate] no new shipment for order ${orderId} (${event.name}): closed order or shipment exists`)
   } catch (e) {
     logger.warn(`[zone-rate] could not create the shipment (${event.name} ${event.data?.id}): ${(e as Error).message}`)
   }

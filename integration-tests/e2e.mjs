@@ -242,6 +242,52 @@ async function checks(seed) {
 
   if (process.env.ZR_E2E_PAID_GUARD === "1") await paidGuardChecks({ store, admin, jt })
   else await trackingChecks({ seed, store, admin, jt, domestic })
+
+  // A second order for the creation guard (both runs)
+  const guardCart = await newCart("idr", { country_code: "id", province: "Jawa Tengah", city: "Semarang", address_1: "Jl. B", postal_code: "50111", first_name: "G", last_name: "Uard" })
+  await api("POST", `/store/carts/${guardCart}/shipping-methods`, { headers: store, body: { option_id: domestic.id } })
+  await createGuardChecks({ store, admin, cartId: guardCart })
+}
+
+/** 0.2.1: no second tracking number from duplicate/replayed events, none for closed orders */
+async function createGuardChecks({ store, admin, cartId }) {
+  console.log("\nShipment creation guard")
+  const order = await placeOrder(store, cartId)
+  const list = async () => (await api("GET", `/admin/zone-rate/orders/${order.id}/shipments`, { headers: admin })).json.shipments ?? []
+  const first = await waitFor(async () => (await list())[0])
+  check("shipment created once on order.placed", !!first, first)
+  if (!first) return
+  const emit = (n) =>
+    api("POST", "/admin/e2e/emit", { headers: admin, body: { events: Array.from({ length: n }, () => ({ name: "order.placed", data: { id: order.id } })) } })
+  const settle = () => new Promise((r) => setTimeout(r, 2500))
+
+  await emit(3)
+  await settle()
+  let all = await list()
+  check("3 replayed order.placed (concurrent): still one shipment", all.length === 1 && all[0].id === first.id, all.map((s) => s.tracking_number))
+
+  let r = await api("POST", `/admin/zone-rate/shipments/${first.id}/status`, { headers: admin, body: { status: "dibatalkan" } })
+  check("shipment canceled", r.status === 200, r.json)
+  await emit(1)
+  await settle()
+  all = await list()
+  check("replay after the shipment was canceled: no new tracking number", all.length === 1, all.map((s) => [s.tracking_number, s.status]))
+
+  r = await api("POST", "/admin/zone-rate/shipments", { headers: admin, body: { order_id: order.id } })
+  check("Admin can still re-issue a shipment after a canceled one", r.status === 200 && r.json.shipment?.id !== first.id, r.json)
+  const reissued = r.json.shipment
+  r = await api("POST", "/admin/zone-rate/shipments", { headers: admin, body: { order_id: order.id } })
+  check("Admin create again returns the open shipment (no third)", r.status === 200 && r.json.shipment?.id === reissued?.id, r.json)
+
+  if (reissued) await api("POST", `/admin/zone-rate/shipments/${reissued.id}/status`, { headers: admin, body: { status: "dibatalkan" } })
+  r = await api("POST", `/admin/orders/${order.id}/cancel`, { headers: admin, body: {} })
+  check("order canceled", r.status === 200, r.json)
+  await emit(2)
+  await settle()
+  all = await list()
+  check("replay for a canceled order: no new tracking number", all.length === 2, all.map((s) => [s.tracking_number, s.status]))
+  r = await api("POST", "/admin/zone-rate/shipments", { headers: admin, body: { order_id: order.id } })
+  check("Admin create refused for a canceled order", r.status === 400 && /canceled/.test(r.json.message ?? ""), r.json)
 }
 
 async function placeOrder(store, cartId) {

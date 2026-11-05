@@ -5,6 +5,17 @@ All notable changes to `medusa-fulfillment-zone-rate`. The format follows
 
 ## [Unreleased]
 
+## [0.2.1]
+
+### Fixed
+
+- Automatic shipment creation (`tracking.autoCreate`) could issue a **second tracking number** when `order.placed` /
+  `payment.captured` arrived again (replayed or duplicate event) after the order's shipment had been canceled, and
+  for canceled orders. It now creates nothing for orders that are canceled, archived or still a draft, or that have
+  had any shipment before (canceled ones included); duplicate and replayed events are idempotent.
+- Admin "Create shipment" is refused for canceled, archived and draft orders. It still returns the open shipment,
+  and an admin can still re-issue one after a canceled shipment on an open order.
+
 ## [0.2.0]
 
 ### Added

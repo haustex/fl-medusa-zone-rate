@@ -59,7 +59,9 @@ mobile-first Admin, A6 labels).
 ### Tracking
 
 - **Shipment per order**, created when the payment is captured (option `tracking.autoCreate`: `"payment.captured"`,
-  `"order.placed"` or `false`), or from the order page in the Admin.
+  `"order.placed"` or `false`), or from the order page in the Admin. Automatic creation happens once per order:
+  never for canceled, archived or draft orders, never again after a shipment existed (also a canceled one), so
+  replayed events are harmless; an admin can re-issue one after a cancellation.
 - **Tracking numbers** like `HK-261103-7K3QX9`: prefix, ship date (store time zone), five random symbols and a check
   symbol that catches every single-symbol typo; unique in the database. A third-party carrier's name, number and
   link can be added alongside.
