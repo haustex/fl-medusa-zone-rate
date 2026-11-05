@@ -8,7 +8,7 @@ This host also runs the **hauskayu.com production store**.
 - **Never** touch the `hauskayu-*` containers.
 - Test **only** on ports `9500+` and the `zr-spike-*` containers (Postgres `127.0.0.1:55434`, Redis `127.0.0.1:56381`).
 - Every medusa/db command goes **through `scripts/guard.mjs`**.
-- **Never commit** secrets or `.env` files. Do not publish to npm or push to GitHub until Anto says OK.
+- **Never commit** secrets or `.env` files. Do not publish to npm or push to GitHub until the maintainer (Haus Kayu) says OK.
 
 ## Technical decisions
 

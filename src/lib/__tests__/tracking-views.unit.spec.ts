@@ -32,7 +32,7 @@ const shipment: ShipmentRecord = {
   metadata: null,
 }
 const ev = (id: string, status: string, pub: boolean, at: string, note: string | null = null) => ({
-  id, status, previous_status: null, note, location: "Jepara", occurred_at: at, created_by: "user_1", created_by_name: "Anto", public: pub, photo_ids: ["zrpho_1"], notified_at: null,
+  id, status, previous_status: null, note, location: "Jepara", occurred_at: at, created_by: "user_1", created_by_name: "Staf Gudang", public: pub, photo_ids: ["zrpho_1"], notified_at: null,
 })
 const events = [
   ev("e1", "diproses", true, "2026-11-02T01:00:00Z"),
@@ -47,7 +47,7 @@ describe("tracking views", () => {
     expect(v.destination).toEqual({ city: "Semarang", province: "ID-JT", country_code: "id" })
     expect(v.events.map((e) => e.status)).toEqual(["dikirim", "diproses"])
     expect(v.status_label).toBe("Dikirim")
-    for (const secret of ["Siti", "Melati", "50111", "0812", "buyer@", "rahasia", "Pak Budi", "zrpho", "Anto", "order_1"]) expect(s).not.toContain(secret)
+    for (const secret of ["Siti", "Melati", "50111", "0812", "buyer@", "rahasia", "Pak Budi", "zrpho", "Staf Gudang", "order_1"]) expect(s).not.toContain(secret)
   })
 
   it("customer view adds notes and photos of public events only", () => {
