@@ -16,11 +16,17 @@ export async function adminActor(req: AuthenticatedMedusaRequest): Promise<Actor
   }
 }
 
+/**
+ * Language of a store response: `?lang=`, then Medusa's own request locale
+ * (2.22 consumes `?locale=` itself), then Accept-Language.
+ */
 export function requestLocale(req: MedusaRequest): Locale {
-  const q = typeof req.query.locale === "string" ? req.query.locale : ""
-  if (q.startsWith("id")) return "id"
-  if (q.startsWith("en")) return "en"
-  return String(req.headers["accept-language"] ?? "").toLowerCase().startsWith("id") ? "id" : "en"
+  const pick = (v: unknown) => (typeof v === "string" ? v.toLowerCase() : "")
+  for (const v of [pick(req.query?.lang), pick(req.query?.locale), pick((req as { locale?: unknown }).locale)]) {
+    if (v.startsWith("id")) return "id"
+    if (v.startsWith("en")) return "en"
+  }
+  return pick(req.headers["accept-language"]).startsWith("id") ? "id" : "en"
 }
 
 /**

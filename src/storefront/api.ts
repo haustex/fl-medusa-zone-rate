@@ -42,8 +42,8 @@ export type LookupResult =
   | { ok: false; reason: "not_found" | "rate_limited" | "error" }
 
 export async function getTracking(config: BackendConfig, number: string, locale: TrackingLocale): Promise<LookupResult> {
-  const res = await fetch(url(config, `/store/zone-rate/track/${encodeURIComponent(number)}?locale=${locale}`), {
-    headers: backendHeaders(config),
+  const res = await fetch(url(config, `/store/zone-rate/track/${encodeURIComponent(number)}?lang=${locale}`), {
+    headers: { ...backendHeaders(config), "accept-language": locale },
     cache: "no-store",
   })
   if (res.status === 404) return { ok: false, reason: "not_found" }
@@ -62,8 +62,8 @@ export function openTrackingStream(config: BackendConfig, number: string, signal
 }
 
 export async function getOrderShipments(config: BackendConfig, orderId: string, locale: TrackingLocale): Promise<CustomerShipment[]> {
-  const res = await fetch(url(config, `/store/zone-rate/orders/${encodeURIComponent(orderId)}/shipments?locale=${locale}`), {
-    headers: backendHeaders(config),
+  const res = await fetch(url(config, `/store/zone-rate/orders/${encodeURIComponent(orderId)}/shipments?lang=${locale}`), {
+    headers: { ...backendHeaders(config), "accept-language": locale },
     cache: "no-store",
   })
   if (!res.ok) return []

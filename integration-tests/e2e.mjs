@@ -332,6 +332,10 @@ async function trackingChecks({ store, admin, jt }) {
     pub && pub.destination.city === "Semarang" && !/Jl\. A|50111|Pak Budi|bubble|first_name|E2E/.test(text) && pub.events.length === 3,
     pub
   )
+  r = await api("GET", `/store/zone-rate/track/${shipment.tracking_number}?lang=id`, { headers: store })
+  check("?lang=id → Indonesian labels", r.json.shipment?.events?.[0]?.label === "Dikirim" && r.json.shipment.events.at(-1).label === "Diproses", r.json.shipment?.events)
+  r = await api("GET", `/store/zone-rate/track/${shipment.tracking_number}`, { headers: { ...store, "accept-language": "en-US" } })
+  check("English by default", r.json.shipment?.events?.at(-1)?.label === "Processing", r.json.shipment?.events)
   r = await api("GET", `/store/zone-rate/track/${shipment.tracking_number.slice(0, -1)}X`, { headers: store })
   check("wrong check symbol → 404", r.status === 404, r.status)
 
