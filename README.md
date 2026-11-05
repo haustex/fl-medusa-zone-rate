@@ -1,13 +1,13 @@
 # Zone Rate & Tracking — by Haus Kayu
 
-Calculated shipping for Medusa v2: price per kilogram by destination zone, on the chargeable weight (the larger of
-actual and volumetric weight). Shipment tracking follows in a later release.
+Calculated shipping for Medusa v2 (price per kilogram by destination zone, on the chargeable weight: the larger of
+actual and volumetric weight) and shipment tracking (own tracking numbers, status timeline, live tracking page,
+mobile-first Admin, A6 labels).
 
 > Ongkir terhitung untuk Medusa v2: tarif per kg menurut zona tujuan, dari berat tagih (yang lebih besar antara berat
 > aktual dan berat volume). Dibuat dan dipakai sendiri oleh Haus Kayu.
 
-**Status:** 0.1.0 in development, not published yet. Part 1 (calculated rates) is done and tested on Medusa 2.19 and
-2.22; tracking (part 3) is next.
+**Status:** 0.1.0 in development, not published yet; tested on Medusa 2.19 and 2.22, running on hauskayu.com.
 
 [English](#english) · [Bahasa Indonesia](#bahasa-indonesia)
 
@@ -46,6 +46,54 @@ actual and volumetric weight). Shipment tracking follows in a later release.
 - **Fixed exchange rate** for carts in another currency: rates stay in your base currency, the price is converted
   and rounded **up** to a whole unit. The rate and the date you set it are shown in the Admin.
 - Admin pages in English and Indonesian; a small "by Haus Kayu" credit you can turn off.
+
+
+### Tracking
+
+- **Shipment per order**, created when the payment is captured (option `tracking.autoCreate`: `"payment.captured"`,
+  `"order.placed"` or `false`), or from the order page in the Admin.
+- **Tracking numbers** like `HK-261103-7K3QX9`: prefix, ship date (store time zone), five random symbols and a check
+  symbol that catches every single-symbol typo; unique in the database. A third-party carrier's name, number and
+  link can be added alongside.
+- **Statuses** `diproses` → `dikemas` → `diserahkan_ke_kurir` / `dikirim` → `transit` → `tiba_di_kota_tujuan` →
+  `dalam_pengantaran` → `terkirim`, plus `gagal_kirim`, `dikembalikan`, `dibatalkan` (labels in English and
+  Indonesian). Add or relabel statuses with `tracking.statuses`; other transitions are refused.
+- **Medusa in step**: a shipped status creates the Medusa fulfillment and shipment (label = our tracking number),
+  `terkirim` marks it delivered, `dibatalkan` cancels an unshipped fulfillment.
+- **Timeline** (append-only): status, note, location, time, admin, shown-to-buyer, up to 5 proof photos per update
+  (compressed on the server to WebP, longest side 1600 px, EXIF/GPS removed; stored in the database, not public).
+- **Live**: open tracking pages and Admin pages update over Server-Sent Events (Redis pub/sub across processes when
+  Redis is configured), with 30-second polling as fallback.
+- **Events** `shipment.created` and `shipment.status_updated` for your own subscribers (WhatsApp, Slack …).
+- **E-mails** to the buyer for every status shown to them, through the Notification Module (English/Indonesian
+  templates you can replace, one e-mail per event); skipped quietly without a provider.
+- **Admin** (sidebar → Shipments): counts per status, late and shipped today; search by tracking number, order
+  number, name or e-mail; filters; bulk update; one screen per shipment with big status buttons and camera upload;
+  A6 label (Code 128 + QR to the tracking page) and packing slip; widget on the order page.
+- **Storefront**: public lookup (status, city and times only, rate limited per IP) and the customer's own order
+  timeline with notes and photos. See [examples/dtc-starter](examples/dtc-starter/README.md).
+
+Plugin options (`plugins: [{ resolve: "medusa-fulfillment-zone-rate", options }]`):
+
+```ts
+{
+  showCredit: true,
+  tracking: {
+    prefix: "HK",
+    timeZone: "Asia/Jakarta",
+    autoCreate: "payment.captured",
+    lookupsPerIpPerMinute: 30,
+    trustedProxySecret: process.env.ZONE_RATE_PROXY_SECRET, // same value in the storefront
+    label: { senderName: "My Store" },                      // default: store name + stock location address
+    notifications: {
+      storeName: "My Store",
+      trackingUrl: { id: "https://shop.example/lacak/{tracking_number}", en: "https://shop.example/us/track/{tracking_number}" },
+      // templates: { id: { subject, text, html? }, en: { … } }
+    },
+    // statuses: [{ id: "ditahan_bea_cukai", label: { en: "Held at customs", id: "Ditahan bea cukai" }, next: ["transit"] }],
+  },
+}
+```
 
 ### Install
 
