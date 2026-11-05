@@ -1,7 +1,7 @@
 {
   "name": "medusa-fulfillment-zone-rate",
   "version": "0.1.0",
-  "description": "Calculated shipping by zone and chargeable weight (actual vs volumetric), with shipment tracking, for Medusa v2 — by Haus Kayu",
+  "description": "Calculated shipping by zone and chargeable weight (actual vs volumetric), with shipment tracking, for Medusa v2 \u2014 by Haus Kayu",
   "author": "Haus Kayu <dev@hauskayu.com> (https://hauskayu.com)",
   "license": "MIT",
   "homepage": "https://github.com/haustex/fl-medusa-zone-rate#readme",
@@ -18,6 +18,9 @@
     ".medusa/server",
     "!.medusa/server/**/__tests__",
     "examples",
+    "src/storefront",
+    "!src/storefront/__tests__",
+    "!src/storefront/tsconfig.json",
     "CHANGELOG.md",
     "SECURITY.md"
   ],
@@ -49,7 +52,7 @@
     "build": "medusa plugin:build",
     "dev": "medusa plugin:develop",
     "lint": "medusa lint",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p src/admin/tsconfig.json",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p src/admin/tsconfig.json && tsc -p src/storefront",
     "test": "jest",
     "test:unit": "jest",
     "prepublishOnly": "medusa plugin:build",
