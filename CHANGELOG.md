@@ -5,7 +5,10 @@ All notable changes to `medusa-fulfillment-zone-rate`. The format follows
 
 ## [Unreleased]
 
-## [0.3.0]
+## [0.3.0] - unreleased
+
+First public release on npm (0.1.0–0.2.1 were internal builds). Works with Medusa `^2.19.0`, tested on 2.19.0
+and 2.22.2. The date is set when the `v0.3.0` tag is pushed.
 
 ### Added
 
@@ -77,3 +80,5 @@ All notable changes to `medusa-fulfillment-zone-rate`. The format follows
 
 - "Shipping rates" page: rates, zones and exchange rate; incomplete variants report with CSV export; rejection log.
   English and Indonesian; optional "by Haus Kayu" credit.
+
+[0.3.0]: https://github.com/haustex/fl-medusa-zone-rate/releases/tag/v0.3.0

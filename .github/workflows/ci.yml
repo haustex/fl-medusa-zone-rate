@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  workflow_call: # release.yml runs the full suite before publishing
 
 permissions:
   contents: read
@@ -41,6 +42,8 @@ jobs:
       - run: npm run typecheck
       - run: npm run test:unit
       - run: npm run build
+      - name: Package contents
+        run: node scripts/check-pack.mjs
 
       # Same container name and port as CONTRIBUTING.md; scripts/guard.mjs accepts nothing else.
       - name: Start Postgres

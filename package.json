@@ -57,7 +57,8 @@
     "test:unit": "jest",
     "prepublishOnly": "medusa plugin:build",
     "guard": "node scripts/guard.mjs",
-    "db:generate": "node scripts/guard.mjs medusa plugin:db:generate"
+    "db:generate": "node scripts/guard.mjs medusa plugin:db:generate",
+    "pack:check": "node scripts/check-pack.mjs"
   },
   "devDependencies": {
     "@medusajs/admin-sdk": "2.19.0",
