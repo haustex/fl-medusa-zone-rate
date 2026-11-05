@@ -20,8 +20,31 @@ module.exports = defineConfig({
     },
   },
   admin: { disable: process.env.ZR_ADMIN !== "1", backendUrl: "/" },
-  plugins: [{ resolve: pluginDir, options: { showCredit: true } }],
+  plugins: [
+    {
+      resolve: pluginDir,
+      options: {
+        showCredit: true,
+        tracking: {
+          // The test app has no payment capture, so shipments start at order.placed
+          autoCreate: "order.placed",
+          lookupsPerIpPerMinute: 40,
+          notifications: {
+            storeName: "Toko Tes",
+            trackingUrl: { id: "http://localhost:9510/lacak/{tracking_number}", en: "http://localhost:9510/us/track/{tracking_number}" },
+          },
+        },
+      },
+    },
+  ],
   modules: [
+    {
+      // Logs e-mails instead of sending them; rows land in the notification table
+      resolve: "@medusajs/medusa/notification",
+      options: {
+        providers: [{ resolve: "@medusajs/medusa/notification-local", id: "local", options: { channels: ["email"] } }],
+      },
+    },
     {
       resolve: "@medusajs/medusa/fulfillment",
       options: {

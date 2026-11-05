@@ -136,9 +136,21 @@ describe("ZoneRateProviderService", () => {
   it("never quotes without logging when there is no database", async () => {
     const provider = new ZoneRateProviderService({ logger } as any, hausKayu)
     await expect(
-      provider.calculatePrice({ id: "domestic" }, {}, context({ shipping_address: { country_code: "id", province: "" } }))
+      provider.calculatePrice({ id: "domestic" }, {}, context({ shipping_address: { country_code: "id", province: "", address_1: "Jl. A" } }))
     ).rejects.toThrow(/provinsi/)
     expect(logger.warn).toHaveBeenCalled()
+  })
+
+  it("does not log a cart that has no address yet", async () => {
+    const { provider, rejections } = make()
+    await expect(
+      provider.calculatePrice({ id: "domestic" }, {}, context({ shipping_address: { country_code: "id", province: null } }))
+    ).rejects.toThrow()
+    expect(rejections).toHaveLength(0)
+    await expect(
+      provider.calculatePrice({ id: "domestic" }, {}, context({ shipping_address: { country_code: "id", province: "", address_1: "Jl. A" } }))
+    ).rejects.toThrow()
+    expect(rejections).toHaveLength(1)
   })
 
   it("fails at startup on a bad config", () => {

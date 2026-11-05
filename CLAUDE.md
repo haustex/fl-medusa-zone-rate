@@ -25,3 +25,11 @@ This host also runs the **hauskayu.com production store**.
   repeats for the same cart + signature bump `count`. Logging never throws.
 - The provider's options ARE the rate config; Admin routes find it in `configModule.modules` (fulfillment providers
   whose `resolve` points at this package). Plugin options hold only `showCredit`.
+- Tracking orchestration lives in `src/lib/tracking/shipments.ts` (not a workflow): Locking Module per
+  shipment/order, then Medusa's own workflows (`createOrderFulfillmentWorkflow`, `createOrderShipmentWorkflow`,
+  `markOrderFulfillmentAsDeliveredWorkflow`, `cancelOrderFulfillmentWorkflow`) run from there.
+- Order query: `items.quantity` is only filled when `items.detail.quantity` is requested too; quantities come back as
+  BigNumber, convert with `MathBN`.
+- In server+worker mode subscribers run only in the worker, so the SSE hub is fed directly by the process that
+  records the status (and Redis pub/sub for the others), not by a subscriber.
+- `medusa exec` rejects `--flags` for scripts; use plain words.

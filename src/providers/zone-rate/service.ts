@@ -96,10 +96,15 @@ export default class ZoneRateProviderService extends AbstractFulfillmentProvider
     })
 
     if (!result.ok) {
-      await recordRejection(this.pg_, this.logger_, {
+      // Not worth a log row: the buyer simply has not entered an address yet
+      const noAddressYet =
+        result.reason === "no_address" ||
+        result.reason === "no_items" ||
+        (result.reason === "unknown_province" && !result.raw_province && !address?.address_1)
+      if (!noAddressYet) await recordRejection(this.pg_, this.logger_, {
         cart_id: context.id ?? null,
         rejection: result,
-      })
+        })
       throw new MedusaError(MedusaError.Types.NOT_ALLOWED, result.message)
     }
 

@@ -111,7 +111,9 @@ async function main() {
   process.exit(failures ? 1 : 0)
 }
 
+let seedRef
 async function checks(seed) {
+  seedRef = seed
   const store = { "x-publishable-api-key": seed.publishable_key }
 
   const newCart = async (currency, address, variant = "talenan", quantity = 1) => {
@@ -214,6 +216,178 @@ async function checks(seed) {
   check("admin routes need a login", r.status === 401, r.status)
   r = await api("GET", "/admin/fulfillment-providers", { headers: admin })
   check("provider registered as zone-rate_zone-rate", JSON.stringify(r.json).includes("zone-rate_zone-rate"), r.json)
+
+  await trackingChecks({ seed, store, admin, jt, domestic })
+}
+
+async function placeOrder(store, cartId) {
+  const pc = await api("POST", "/store/payment-collections", { headers: store, body: { cart_id: cartId } })
+  await api("POST", `/store/payment-collections/${pc.json.payment_collection.id}/payment-sessions`, {
+    headers: store,
+    body: { provider_id: "pp_system_default" },
+  })
+  const done = await api("POST", `/store/carts/${cartId}/complete`, { headers: store })
+  if (done.json.type !== "order") throw new Error(`complete cart: ${JSON.stringify(done.json)}`)
+  return done.json.order
+}
+
+async function waitFor(fn, ms = 10000) {
+  const until = Date.now() + ms
+  for (;;) {
+    const v = await fn()
+    if (v) return v
+    if (Date.now() > until) return null
+    await new Promise((r) => setTimeout(r, 300))
+  }
+}
+
+async function trackingChecks({ store, admin, jt }) {
+  console.log("\nTracking")
+  const order = await placeOrder(store, jt)
+  check("order placed with the zone-rate method", order.shipping_methods?.[0]?.amount === 60000, order.shipping_methods)
+
+  const shipment = await waitFor(async () => {
+    const r = await api("GET", `/admin/zone-rate/orders/${order.id}/shipments`, { headers: admin })
+    return r.json.shipments?.[0]
+  })
+  check("shipment created on order.placed", !!shipment, shipment)
+  if (!shipment) return
+  check("tracking number HK-YYMMDD-XXXXXC", /^HK-\d{6}-[0-9A-HJKMNP-TV-Z]{6}$/.test(shipment.tracking_number), shipment.tracking_number)
+  check(
+    "snapshot: status diproses, zone jawa, 2 kg, Rp60.000, Semarang",
+    shipment.status === "diproses" && shipment.zone_id === "jawa" && shipment.chargeable_kg === 2 && shipment.shipping_amount === 60000 && shipment.destination?.city === "Semarang",
+    shipment
+  )
+
+  const status = (id, body) => api("POST", `/admin/zone-rate/shipments/${id}/status`, { headers: admin, body })
+  let r = await status(shipment.id, { status: "terkirim" })
+  check("invalid transition diproses → terkirim refused", r.status === 400 && /cannot go from/.test(r.json.message), r)
+
+  // Live stream: opened before the updates
+  const ac = new AbortController()
+  const received = []
+  const streamed = (async () => {
+    const res = await fetch(`${BASE}/store/zone-rate/track/${shipment.tracking_number}/stream`, { headers: store, signal: ac.signal })
+    const reader = res.body.getReader()
+    const dec = new TextDecoder()
+    let buf = ""
+    try {
+      for (;;) {
+        const { value, done } = await reader.read()
+        if (done) break
+        buf += dec.decode(value)
+        for (const m of buf.matchAll(/event: update\ndata: (.*)\n\n/g)) received.push(JSON.parse(m[1]))
+        buf = buf.slice(buf.lastIndexOf("\n\n") + 2)
+      }
+    } catch {}
+  })()
+  await new Promise((r) => setTimeout(r, 500))
+
+  r = await status(shipment.id, { status: "dikemas", note: "dibungkus bubble wrap", public: true })
+  check("diproses → dikemas", r.status === 200 && r.json.shipment.status === "dikemas", r.json)
+
+  r = await status(shipment.id, { status: "dikirim", location: "Jepara", note: "internal: kurir Pak Budi, 0812", public: true })
+  check("dikemas → dikirim", r.status === 200 && r.json.shipment.shipped_at && r.json.shipment.estimated_delivery_at, r.json)
+  const ord = await api("GET", `/admin/orders/${order.id}?fields=fulfillment_status,fulfillments.shipped_at,fulfillments.labels.tracking_number`, { headers: admin })
+  const f = ord.json.order?.fulfillments?.[0]
+  check(
+    "Medusa: fulfillment created and shipped, label = our tracking number",
+    ord.json.order?.fulfillment_status === "shipped" && f?.shipped_at && f?.labels?.[0]?.tracking_number === shipment.tracking_number,
+    ord.json.order
+  )
+
+  r = await status(shipment.id, { status: "transit", location: "Semarang", public: false })
+  check("hidden event recorded", r.status === 200 && r.json.event.public === false, r.json)
+
+  const seen = await waitFor(() => received.length >= 2 && received, 5000)
+  check(
+    "SSE pushes public updates only (dikemas, dikirim; not the hidden transit)",
+    !!seen && received.map((u) => u.status).join() === "dikemas,dikirim",
+    received
+  )
+  ac.abort()
+  await streamed
+
+  r = await api("GET", `/store/zone-rate/track/${shipment.tracking_number.toLowerCase().replace(/-/g, " ")}`, { headers: store })
+  const pub = r.json.shipment
+  const text = JSON.stringify(pub)
+  check("public lookup (lower case, spaces) works", r.status === 200 && pub?.status === "transit", r.json)
+  check(
+    "public view: city/province only, no name, street, phone or notes",
+    pub && pub.destination.city === "Semarang" && !/Jl\. A|50111|Pak Budi|bubble|first_name|E2E/.test(text) && pub.events.length === 3,
+    pub
+  )
+  r = await api("GET", `/store/zone-rate/track/${shipment.tracking_number.slice(0, -1)}X`, { headers: store })
+  check("wrong check symbol → 404", r.status === 404, r.status)
+
+  // Photo
+  const png = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+  r = await api("POST", `/admin/zone-rate/shipments/${shipment.id}/photos`, { headers: admin, body: { data_url: png } })
+  const photo = r.json.photo
+  check("photo upload (type from content)", r.status === 200 && photo?.mime_type === "image/png", r.json)
+  r = await api("POST", `/admin/zone-rate/shipments/${shipment.id}/photos`, { headers: admin, body: { data_url: "data:image/png;base64,PHNjcmlwdD4=" } })
+  check("non-image refused", r.status === 400, r.status)
+  const img = await fetch(`${BASE}/admin/zone-rate/photos/${photo?.id}`, { headers: admin })
+  check("photo served to admins with nosniff", img.status === 200 && img.headers.get("x-content-type-options") === "nosniff", img.status)
+
+  r = await status(shipment.id, { status: "terkirim", location: "Semarang", photo_ids: [photo?.id], public: true })
+  check("transit → terkirim", r.status === 200 && r.json.shipment.delivered_at, r.json)
+  const ord2 = await api("GET", `/admin/orders/${order.id}?fields=fulfillment_status`, { headers: admin })
+  check("Medusa: order delivered", ord2.json.order?.fulfillment_status === "delivered", ord2.json.order)
+  r = await status(shipment.id, { status: "transit" })
+  check("final status: no more transitions", r.status === 400, r.status)
+
+  r = await api("GET", `/admin/zone-rate/shipments/${shipment.id}`, { headers: admin })
+  check(
+    "timeline append-only: 5 events, actor recorded",
+    r.json.shipment?.events?.length === 5 && r.json.shipment.events.every((e) => e.created_by_name || e.status === "diproses"),
+    r.json.shipment?.events?.map((e) => [e.status, e.created_by_name])
+  )
+
+  // E-mails (notification-local): one per public event, none for the hidden one
+  const notes = await waitFor(async () => {
+    const n = await api("GET", "/admin/notifications?limit=50&fields=id,to,template,data,channel", { headers: admin })
+    const mine = (n.json.notifications ?? []).filter((x) => x.data?.tracking_number === shipment.tracking_number)
+    return mine.length >= 4 && mine
+  })
+  check(
+    "e-mails for public statuses (diproses, dikemas, dikirim, terkirim), not the hidden transit",
+    !!notes && notes.map((n) => n.data.status).sort().join() === "dikemas,dikirim,diproses,terkirim" && notes[0].to === "e2e@example.com",
+    notes
+  )
+
+  // Customer view needs a login
+  r = await api("GET", `/store/zone-rate/orders/${order.id}/shipments`, { headers: store })
+  check("order shipments need a customer login", r.status === 401, r.status)
+
+  // Summary, list filters, bulk update on a second order
+  const cart2 = await (async () => {
+    const { json } = await api("POST", "/store/carts", {
+      headers: store,
+      body: { region_id: seedRef.regions.idr, email: "bulk@example.com", shipping_address: { country_code: "id", province: "Bali", city: "Denpasar", address_1: "Jl. B", first_name: "Bulk", last_name: "Buyer" } },
+    })
+    await api("POST", `/store/carts/${json.cart.id}/line-items`, { headers: store, body: { variant_id: seedRef.variants.talenan, quantity: 1 } })
+    const opts = (await api("GET", `/store/shipping-options?cart_id=${json.cart.id}`, { headers: store })).json.shipping_options
+    await api("POST", `/store/carts/${json.cart.id}/shipping-methods`, { headers: store, body: { option_id: opts[0].id } })
+    return json.cart.id
+  })()
+  const order2 = await placeOrder(store, cart2)
+  const s2 = await waitFor(async () => (await api("GET", `/admin/zone-rate/orders/${order2.id}/shipments`, { headers: admin })).json.shipments?.[0])
+  r = await api("POST", "/admin/zone-rate/shipments/bulk-status", { headers: admin, body: { ids: [s2.id, shipment.id], status: "dikemas" } })
+  check("bulk update: valid one updated, delivered one refused", r.json.updated === 1 && r.json.failed === 1, r.json)
+  r = await api("GET", "/admin/zone-rate/shipments?q=bulk&status=dikemas", { headers: admin })
+  check("list: search + status filter", r.json.count === 1 && r.json.shipments[0].zone_id === "bali", r.json)
+  r = await api("GET", `/admin/zone-rate/shipments?q=%23${order2.display_id}`, { headers: admin })
+  check("list: search by #order number", r.json.count === 1, r.json.count)
+  r = await api("GET", "/admin/zone-rate/shipments/summary", { headers: admin })
+  check("summary: per status + shipped today", r.json.by_status?.terkirim === 1 && r.json.by_status?.dikemas === 1 && r.json.shipped_today === 1, r.json)
+
+  // Rate limit (40/min in the test app)
+  let limited = false
+  for (let i = 0; i < 45 && !limited; i++) {
+    limited = (await api("GET", `/store/zone-rate/track/HK-000000-000000`, { headers: store })).status === 429
+  }
+  check("public lookups are rate limited per IP", limited, limited)
 }
 
 main().catch((e) => {

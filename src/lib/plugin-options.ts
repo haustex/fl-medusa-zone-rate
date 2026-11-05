@@ -2,6 +2,7 @@ import fs from "node:fs"
 import path from "node:path"
 import type { ConfigModule, MedusaContainer } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
+import type { StatusDefinition } from "./tracking/statuses"
 import type { ZoneRateConfig } from "./types"
 
 export const PACKAGE_NAME = "medusa-fulfillment-zone-rate"
@@ -10,6 +11,43 @@ export const PACKAGE_NAME = "medusa-fulfillment-zone-rate"
 export type ZoneRatePluginOptions = {
   /** Show the small "by Haus Kayu" credit under the plugin's Admin pages. Default true. */
   showCredit?: boolean
+  tracking?: TrackingOptions
+}
+
+export type TrackingOptions = {
+  /** Tracking number prefix, 1–4 letters. Default "HK". */
+  prefix?: string
+  /** Time zone of the date in tracking numbers and of "shipped today". Default "Asia/Jakarta". */
+  timeZone?: string
+  /** Relabel, add or rewire statuses (see src/lib/tracking/statuses.ts) */
+  statuses?: Partial<StatusDefinition>[]
+  /**
+   * Create the shipment record automatically: when the order's payment is
+   * captured (default), when the order is placed, or never (Admin only).
+   */
+  autoCreate?: "payment.captured" | "order.placed" | false
+  /** Public tracking lookups one IP may make per minute. Default 30. */
+  lookupsPerIpPerMinute?: number
+  /**
+   * Secret the storefront sends in `x-zr-proxy-secret` with the buyer's IP in
+   * `x-zr-client-ip`, so the per-IP limit counts buyers, not the storefront
+   * server. Default: env ZONE_RATE_PROXY_SECRET; unset trusts no header.
+   */
+  trustedProxySecret?: string
+  notifications?: {
+    /** E-mail the buyer on every status shown to the buyer. Default true (needs a Notification Module provider). */
+    enabled?: boolean
+    channel?: string
+    /** Buyer language: "auto" (Indonesian for Indonesian addresses), "en" or "id". Default "auto". */
+    locale?: "auto" | "en" | "id"
+    /**
+     * Tracking page link with {tracking_number}, per language, e.g.
+     * { id: "https://shop.id/lacak/{tracking_number}", en: "https://shop.id/us/track/{tracking_number}" }
+     */
+    trackingUrl?: string | { en?: string; id?: string }
+    /** Store name in the e-mails. Default "our store". */
+    storeName?: string
+  }
 }
 
 type Entry = string | { resolve?: unknown; options?: unknown; providers?: unknown }
@@ -68,4 +106,23 @@ export function getProviderConfig(container: MedusaContainer): ZoneRateConfig | 
     }
   }
   return null
+}
+
+export function getTrackingOptions(container: MedusaContainer) {
+  const t = getPluginOptions(container).tracking ?? {}
+  return {
+    prefix: t.prefix ?? "HK",
+    timeZone: t.timeZone ?? "Asia/Jakarta",
+    statuses: t.statuses ?? [],
+    autoCreate: t.autoCreate === undefined ? ("payment.captured" as const) : t.autoCreate,
+    lookupsPerIpPerMinute: t.lookupsPerIpPerMinute ?? 30,
+    trustedProxySecret: t.trustedProxySecret ?? process.env.ZONE_RATE_PROXY_SECRET ?? null,
+    notifications: {
+      enabled: t.notifications?.enabled !== false,
+      channel: t.notifications?.channel ?? "email",
+      locale: t.notifications?.locale ?? ("auto" as const),
+      trackingUrl: t.notifications?.trackingUrl ?? null,
+      storeName: t.notifications?.storeName ?? null,
+    },
+  }
 }

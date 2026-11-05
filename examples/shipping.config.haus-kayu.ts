@@ -9,8 +9,8 @@ import type { ZoneRateConfig } from "medusa-fulfillment-zone-rate/types"
 const config: ZoneRateConfig = {
   currency: "idr",
   exchange_rates: {
-    // IDR per 1 USD (example value, set your own). Update the date whenever you change the rate.
-    usd: { rate: 16500, updated_at: "2026-11-03" },
+    // IDR per 1 USD (Haus Kayu: 18.000, rounded up to whole dollars). Update the date whenever you change the rate.
+    usd: { rate: 18000, updated_at: "2026-11-03" },
   },
   units: { weight: "g", dimension: "cm" },
   volumetric_divisor: 6000,
