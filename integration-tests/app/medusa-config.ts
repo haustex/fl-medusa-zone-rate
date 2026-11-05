@@ -28,6 +28,8 @@ module.exports = defineConfig({
         tracking: {
           // The test app has no payment capture, so shipments start at order.placed
           autoCreate: "order.placed",
+          // Second e2e run (ZR_E2E_PAID_GUARD=1): shipped statuses need a fully captured payment
+          requirePaidBeforeShipping: process.env.ZR_E2E_PAID_GUARD === "1",
           lookupsPerIpPerMinute: 40,
           notifications: {
             storeName: "Toko Tes",

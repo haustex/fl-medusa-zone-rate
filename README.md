@@ -68,6 +68,10 @@ mobile-first Admin, A6 labels).
   Indonesian). Add or relabel statuses with `tracking.statuses`; other transitions are refused.
 - **Medusa in step**: a shipped status creates the Medusa fulfillment and shipment (label = our tracking number),
   `terkirim` marks it delivered, `dibatalkan` cancels an unshipped fulfillment.
+- **Payment before shipping** (optional, off by default): with `tracking.requirePaidBeforeShipping: true` the shipped
+  statuses (`diserahkan_ke_kurir`, `dikirim`, or your own with `medusa: "shipped"`) are refused while the order still
+  has an outstanding amount (total minus captured payments), for stores that bill in parts (deposit + balance).
+  Other statuses are not affected. Authorized-but-not-captured payments count as outstanding.
 - **Timeline** (append-only): status, note, location, time, admin, shown-to-buyer, up to 5 proof photos per update
   (compressed on the server to WebP, longest side 1600 px, EXIF/GPS removed; stored in the database, not public).
 - **Live**: open tracking pages and Admin pages update over Server-Sent Events (Redis pub/sub across processes when
@@ -90,6 +94,7 @@ Plugin options (`plugins: [{ resolve: "medusa-fulfillment-zone-rate", options }]
     prefix: "HK",
     timeZone: "Asia/Jakarta",
     autoCreate: "payment.captured",
+    // requirePaidBeforeShipping: true,                     // refuse "shipped" statuses while money is outstanding
     lookupsPerIpPerMinute: 30,
     trustedProxySecret: process.env.ZONE_RATE_PROXY_SECRET, // same value in the storefront
     label: { senderName: "My Store" },                      // default: store name + stock location address
@@ -238,6 +243,9 @@ provider in a real Medusa app against a throwaway Postgres.
   "Provinsi"/"Prov.", huruf besar/kecil dan spasi bebas.
 - **Kurs tetap** untuk keranjang mata uang lain: tarif tetap dalam mata uang dasar, hasilnya dikonversi dan
   dibulatkan **ke atas** ke satuan penuh. Kurs dan tanggal update tampil di Admin.
+- **Lunas sebelum dikirim** (opsional, default mati): `tracking.requirePaidBeforeShipping: true` menolak status kirim
+  (`diserahkan_ke_kurir`, `dikirim`) selama order masih punya sisa tagihan, untuk toko yang menagih bertahap (DP +
+  pelunasan).
 - Admin dua bahasa (en/id) dan credit kecil "by Haus Kayu" yang bisa dimatikan (`showCredit: false`).
 
 ### Pasang

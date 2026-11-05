@@ -26,6 +26,13 @@ export type TrackingOptions = {
    * captured (default), when the order is placed, or never (Admin only).
    */
   autoCreate?: "payment.captured" | "order.placed" | false
+  /**
+   * Refuse the shipped statuses (`medusa: "shipped"`, e.g. `dikirim`) while the
+   * order still has an outstanding amount (total minus captured payments), for
+   * stores that bill in parts (deposit + balance). Default false: no check.
+   * Note: authorized-but-not-captured payments count as outstanding.
+   */
+  requirePaidBeforeShipping?: boolean
   /** Public tracking lookups one IP may make per minute. Default 30. */
   lookupsPerIpPerMinute?: number
   /**
@@ -117,6 +124,7 @@ export function getTrackingOptions(container: MedusaContainer) {
     timeZone: t.timeZone ?? "Asia/Jakarta",
     statuses: t.statuses ?? [],
     autoCreate: t.autoCreate === undefined ? ("payment.captured" as const) : t.autoCreate,
+    requirePaidBeforeShipping: t.requirePaidBeforeShipping === true,
     lookupsPerIpPerMinute: t.lookupsPerIpPerMinute ?? 30,
     trustedProxySecret: t.trustedProxySecret ?? process.env.ZONE_RATE_PROXY_SECRET ?? null,
     notifications: {

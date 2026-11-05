@@ -1,6 +1,6 @@
 {
   "name": "medusa-fulfillment-zone-rate",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Calculated shipping by zone and chargeable weight (actual vs volumetric), with shipment tracking, for Medusa v2 \u2014 by Haus Kayu",
   "author": "Haus Kayu <dev@hauskayu.com> (https://hauskayu.com)",
   "license": "MIT",

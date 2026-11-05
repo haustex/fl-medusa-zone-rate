@@ -12,6 +12,7 @@ import { quote } from "../quote"
 import type { Estimate, Locale, QuoteItem } from "../types"
 import { shipmentHub } from "./realtime"
 import { buildStatusMachine, type StatusMachine } from "./statuses"
+import { shippingGuardApplies, shippingGuardMessage } from "./shipping-guard"
 import { generateTrackingNumber } from "./tracking-number"
 
 export const ZONE_RATE_MODULE = "zoneRate"
@@ -367,6 +368,9 @@ export async function updateShipmentStatus(
     const shipment: ShipmentRecord = await svc.retrieveZoneRateShipment(input.shipment_id)
     machine.assertTransition(shipment.status, input.status)
     const def = machine.statuses.get(input.status)!
+    if (shippingGuardApplies(getTrackingOptions(container).requirePaidBeforeShipping, def)) {
+      await assertOrderPaid(container, shipment.order_id)
+    }
     const occurred = input.occurred_at ? new Date(input.occurred_at) : new Date()
     if (Number.isNaN(occurred.getTime())) throw new MedusaError(MedusaError.Types.INVALID_DATA, "occurred_at is not a date")
     if (occurred.getTime() > Date.now() + 5 * 60_000) throw new MedusaError(MedusaError.Types.INVALID_DATA, "occurred_at is in the future")
@@ -502,4 +506,20 @@ export function customerTrackingView(machine: StatusMachine, shipment: ShipmentR
         occurred_at: e.occurred_at,
       })),
   }
+}
+
+/** tracking.requirePaidBeforeShipping: total minus captured payments must be 0 or less */
+async function assertOrderPaid(container: MedusaContainer, orderId: string) {
+  const query = container.resolve(ContainerRegistrationKeys.QUERY)
+  const { data } = await query.graph({
+    entity: "order",
+    fields: ["id", "display_id", "currency_code", "summary.*"],
+    filters: { id: orderId },
+  })
+  const order = data[0] as any
+  if (!order) return
+  const raw = order.summary?.raw_pending_difference ?? order.summary?.pending_difference ?? 0
+  const outstanding = Number(MathBN.convert(raw).toString())
+  const message = shippingGuardMessage({ outstanding, currency: order.currency_code ?? "", displayId: order.display_id })
+  if (message) throw new MedusaError(MedusaError.Types.NOT_ALLOWED, message)
 }

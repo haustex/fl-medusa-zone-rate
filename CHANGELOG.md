@@ -5,6 +5,16 @@ All notable changes to `medusa-fulfillment-zone-rate`. The format follows
 
 ## [Unreleased]
 
+## [0.2.0]
+
+### Added
+
+- Option `tracking.requirePaidBeforeShipping` (default `false`): refuses the shipped statuses (`medusa: "shipped"`)
+  while the order has an outstanding amount (total minus captured payments), with a message naming the amount.
+  Meant for deposit + balance billing. With the option off nothing changes.
+
+## [0.1.0]
+
 ### Calculated rates
 
 - Fulfillment provider `zone-rate` with calculated prices; one fulfillment option per configured service.

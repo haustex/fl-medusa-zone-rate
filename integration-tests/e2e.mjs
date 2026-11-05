@@ -240,7 +240,8 @@ async function checks(seed) {
   r = await api("GET", "/admin/fulfillment-providers", { headers: admin })
   check("provider registered as zone-rate_zone-rate", JSON.stringify(r.json).includes("zone-rate_zone-rate"), r.json)
 
-  await trackingChecks({ seed, store, admin, jt, domestic })
+  if (process.env.ZR_E2E_PAID_GUARD === "1") await paidGuardChecks({ store, admin, jt })
+  else await trackingChecks({ seed, store, admin, jt, domestic })
 }
 
 async function placeOrder(store, cartId) {
@@ -262,6 +263,32 @@ async function waitFor(fn, ms = 10000) {
     if (Date.now() > until) return null
     await new Promise((r) => setTimeout(r, 300))
   }
+}
+
+/** Run with ZR_E2E_PAID_GUARD=1: option tracking.requirePaidBeforeShipping on */
+async function paidGuardChecks({ store, admin, jt }) {
+  console.log("\nrequirePaidBeforeShipping")
+  const order = await placeOrder(store, jt)
+  const shipment = await waitFor(async () => {
+    const r = await api("GET", `/admin/zone-rate/orders/${order.id}/shipments`, { headers: admin })
+    return r.json.shipments?.[0]
+  })
+  check("shipment created", !!shipment, shipment)
+  if (!shipment) return
+  const status = (body) => api("POST", `/admin/zone-rate/shipments/${shipment.id}/status`, { headers: admin, body })
+  let r = await status({ status: "dikemas" })
+  check("non-shipping status allowed while unpaid (diproses → dikemas)", r.status === 200, r.json)
+  r = await status({ status: "dikirim" })
+  check("shipped status refused while the payment is not captured", r.status === 400 && /not fully paid/.test(r.json.message), r.json)
+  r = await status({ status: "diserahkan_ke_kurir" })
+  check("handed to carrier refused too", r.status === 400 && /not fully paid/.test(r.json.message), r.json)
+
+  const o = await api("GET", `/admin/orders/${order.id}?fields=id,payment_collections.payments.id`, { headers: admin })
+  const paymentId = o.json.order?.payment_collections?.[0]?.payments?.[0]?.id
+  const cap = await api("POST", `/admin/payments/${paymentId}/capture`, { headers: admin, body: {} })
+  check("payment captured in the Admin", cap.status === 200, cap.json)
+  r = await status({ status: "dikirim", location: "Jepara" })
+  check("shipped status allowed once fully paid", r.status === 200 && !!r.json.shipment?.shipped_at, r.json)
 }
 
 async function trackingChecks({ store, admin, jt }) {
