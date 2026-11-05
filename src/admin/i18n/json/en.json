@@ -1,0 +1,69 @@
+{
+  "zoneRate": {
+    "label": "Shipping rates",
+    "title": "Shipping rates",
+    "description": "Calculated shipping by zone and chargeable weight. Rates are set in the shipping config file; this page is read-only.",
+    "notConfigured": "The zone-rate provider is not registered in the Fulfillment Module. See the README to set it up.",
+    "loadError": "Could not load the data.",
+    "tabs": {
+      "rates": "Rates",
+      "incomplete": "Incomplete variants",
+      "rejections": "Rejections"
+    },
+    "rates": {
+      "zone": "Zone",
+      "perKg": "Per kg",
+      "destinations": "Destinations",
+      "estimate": "Delivery",
+      "divisor": "Volumetric divisor",
+      "minimumKg": "Minimum weight",
+      "minimumCharge": "Minimum charge",
+      "exchangeRate": "Exchange rate",
+      "exchangeRateValue": "1 {{currency}} = {{amount}}",
+      "updatedAt": "updated {{date}}",
+      "noExchangeRates": "No exchange rates: carts in another currency are refused.",
+      "fallbackOn": "Product weight and dimensions are used when a variant has none.",
+      "fallbackOff": "Only variant weight and dimensions are used.",
+      "units": "Units: weight in {{weight}}, dimensions in {{dimension}}.",
+      "formula": "Chargeable weight = the larger of actual and volumetric (L × W × H / divisor) weight, rounded up to a whole kg, at least 1 kg.",
+      "estimate_day": "{{min}}–{{max}} days",
+      "estimate_week": "{{min}}–{{max}} weeks",
+      "estimate_month": "{{min}}–{{max}} months"
+    },
+    "incomplete": {
+      "description": "These variants have no weight or are missing a dimension, so checkout refuses to price shipping for them. Fill in weight (g) and length, width and height (cm) on the variant.",
+      "empty": "Every variant has a weight and all dimensions.",
+      "product": "Product",
+      "variant": "Variant",
+      "missing": "Missing",
+      "export": "Export CSV",
+      "edit": "Edit",
+      "count": "{{count}} variants",
+      "field_weight": "weight",
+      "field_length": "length",
+      "field_width": "width",
+      "field_height": "height"
+    },
+    "rejections": {
+      "description": "Each time checkout could not price shipping. Repeats for the same cart are counted on one row.",
+      "empty": "No rejections yet.",
+      "when": "Last seen",
+      "reason": "Reason",
+      "detail": "Detail",
+      "service": "Service",
+      "cart": "Cart",
+      "times": "×{{count}}",
+      "reason_unknown_province": "Unknown province",
+      "reason_unsupported_country": "Country not served",
+      "reason_incomplete_items": "Incomplete variant",
+      "reason_no_address": "No address",
+      "reason_no_items": "No items",
+      "reason_no_exchange_rate": "No exchange rate",
+      "reason_unknown_service": "Unknown service"
+    },
+    "credit": {
+      "text": "Zone Rate & Tracking — by Haus Kayu",
+      "help": "Help"
+    }
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "zoneRate": {
+    "label": "Ongkos kirim",
+    "title": "Ongkos kirim",
+    "description": "Ongkir dihitung dari zona dan berat tagih. Tarif diatur di file config pengiriman; halaman ini hanya untuk melihat.",
+    "notConfigured": "Provider zone-rate belum didaftarkan di Fulfillment Module. Lihat README untuk cara pasangnya.",
+    "loadError": "Data tidak bisa dimuat.",
+    "tabs": {
+      "rates": "Tarif",
+      "incomplete": "Varian belum lengkap",
+      "rejections": "Penolakan"
+    },
+    "rates": {
+      "zone": "Zona",
+      "perKg": "Per kg",
+      "destinations": "Tujuan",
+      "estimate": "Estimasi",
+      "divisor": "Pembagi volume",
+      "minimumKg": "Berat minimal",
+      "minimumCharge": "Ongkir minimal",
+      "exchangeRate": "Kurs",
+      "exchangeRateValue": "1 {{currency}} = {{amount}}",
+      "updatedAt": "diperbarui {{date}}",
+      "noExchangeRates": "Belum ada kurs: keranjang dalam mata uang lain ditolak.",
+      "fallbackOn": "Berat dan ukuran produk dipakai kalau varian belum punya.",
+      "fallbackOff": "Hanya berat dan ukuran varian yang dipakai.",
+      "units": "Satuan: berat {{weight}}, ukuran {{dimension}}.",
+      "formula": "Berat tagih = yang lebih besar antara berat aktual dan berat volume (P × L × T / pembagi), dibulatkan ke atas ke kg penuh, minimal 1 kg.",
+      "estimate_day": "{{min}}–{{max}} hari",
+      "estimate_week": "{{min}}–{{max}} minggu",
+      "estimate_month": "{{min}}–{{max}} bulan"
+    },
+    "incomplete": {
+      "description": "Varian ini belum punya berat atau salah satu ukurannya kosong, jadi checkout menolak menghitung ongkirnya. Isi berat (g) serta panjang, lebar, dan tinggi (cm) di varian.",
+      "empty": "Semua varian sudah punya berat dan ukuran lengkap.",
+      "product": "Produk",
+      "variant": "Varian",
+      "missing": "Kosong",
+      "export": "Export CSV",
+      "edit": "Ubah",
+      "count": "{{count}} varian",
+      "field_weight": "berat",
+      "field_length": "panjang",
+      "field_width": "lebar",
+      "field_height": "tinggi"
+    },
+    "rejections": {
+      "description": "Setiap kali checkout tidak bisa menghitung ongkir. Penolakan berulang untuk keranjang yang sama dihitung di satu baris.",
+      "empty": "Belum ada penolakan.",
+      "when": "Terakhir",
+      "reason": "Alasan",
+      "detail": "Detail",
+      "service": "Layanan",
+      "cart": "Keranjang",
+      "times": "×{{count}}",
+      "reason_unknown_province": "Provinsi tidak dikenal",
+      "reason_unsupported_country": "Negara tidak dilayani",
+      "reason_incomplete_items": "Varian belum lengkap",
+      "reason_no_address": "Tanpa alamat",
+      "reason_no_items": "Tanpa barang",
+      "reason_no_exchange_rate": "Kurs belum ada",
+      "reason_unknown_service": "Layanan tidak dikenal"
+    },
+    "credit": {
+      "text": "Zone Rate & Tracking — by Haus Kayu",
+      "help": "Bantuan"
+    }
+  }
+}

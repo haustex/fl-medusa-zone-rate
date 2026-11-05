@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Medusa ${{ matrix.medusa }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        # 2.19.0 is the lockfile's (lowest supported) version; 2.22.2 the latest tested
+        medusa: ["2.19.0", "2.22.2"]
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci --no-audit --no-fund
+
+      - name: Use Medusa ${{ matrix.medusa }}
+        if: matrix.medusa != '2.19.0'
+        run: node scripts/use-medusa.mjs ${{ matrix.medusa }}
+
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:unit
+      - run: npm run build
+
+      # Same container name and port as CONTRIBUTING.md; scripts/guard.mjs accepts nothing else.
+      - name: Start Postgres
+        run: |
+          docker run -d --name zr-spike-pg -e POSTGRES_PASSWORD=spike -e POSTGRES_DB=zr_spike \
+            -p 127.0.0.1:55434:5432 postgres:17-alpine
+          for _ in $(seq 1 30); do
+            docker exec zr-spike-pg pg_isready -U postgres && break
+            sleep 1
+          done
+
+      - name: E2E
+        run: node integration-tests/e2e.mjs
+
+      - name: Logs
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: e2e-logs-${{ matrix.medusa }}
+          path: integration-tests/.state
+          retention-days: 7
