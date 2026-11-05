@@ -7,7 +7,7 @@ the texts in English and Indonesian. `examples/dtc-starter/install.mjs` copies t
 
 | File | |
 | --- | --- |
-| `api.ts` | server-side calls: `getTracking`, `openTrackingStream` (SSE relay), `getOrderShipments`, `getPhoto`; `clientIpFrom`, `backendHeaders` |
+| `api.ts` | server-side calls: `getRateCard`, `getTracking`, `openTrackingStream` (SSE relay), `getOrderShipments`, `getPhoto`; `clientIpFrom`, `backendHeaders` |
 | `labels.ts` | EN / ID texts, date formats, `normalizeInput` |
 | `types.ts` | `PublicShipment`, `CustomerShipment` |
 | `theme.ts` | class names (Tailwind + `@medusajs/ui-preset` tokens by default) and `mergeTheme` |

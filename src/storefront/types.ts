@@ -31,3 +31,22 @@ export type CustomerShipment = Omit<PublicShipment, "destination"> & {
   tracking_url: string | null
   destination: Record<string, string | null> | null
 }
+
+/** GET /store/zone-rate/services: the public rate card */
+export type RateCard = {
+  base_currency: string
+  currency: string
+  exchange_rate: { rate: number; updated_at: string } | null
+  units: { weight: string; dimension: string }
+  services: {
+    id: string
+    name: string
+    destination: "province" | "country"
+    estimate: { min: number; max: number; unit: "day" | "week" | "month" } | null
+    notice: string | null
+    volumetric_divisor: number
+    minimum_kg: number
+    minimum_charge: number | null
+    zones: { id: string; name: string; rate_per_kg: number | null; rate_per_kg_base: number; destinations: string[] }[]
+  }[]
+}

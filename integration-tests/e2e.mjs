@@ -194,6 +194,14 @@ async function checks(seed) {
   r = await calculate(us, sea.id)
   check("Sea 2 kg × Rp250.000 / 16.500 → $31", r.json.shipping_option?.amount === 31, r.json)
 
+  r = await api("GET", "/store/zone-rate/services?currency=usd&lang=id", { headers: store })
+  const airCard = r.json.services?.find((x) => x.id === "air")
+  check(
+    "public rate card: services, zones, USD per kg rounded up",
+    r.status === 200 && r.json.services.length === 3 && airCard?.zones[0].rate_per_kg === 78 && r.json.services[0].zones[0].destinations.includes("Jawa Tengah"),
+    r.json
+  )
+
   console.log("\nAdmin API")
   const auth = await api("POST", "/auth/user/emailpass", { body: ADMIN })
   const admin = { authorization: `Bearer ${auth.json.token}` }

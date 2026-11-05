@@ -1,5 +1,5 @@
 import type { TrackingLocale } from "./labels"
-import type { CustomerShipment, PublicShipment } from "./types"
+import type { CustomerShipment, PublicShipment, RateCard } from "./types"
 
 /** How the storefront's server reaches the plugin's Store API */
 export type BackendConfig = {
@@ -81,4 +81,18 @@ export const SSE_HEADERS = {
   "Cache-Control": "no-store, no-transform",
   Connection: "keep-alive",
   "X-Accel-Buffering": "no",
+}
+
+/** The public rate card (services, zones, per-kg rates in `currency`, estimates) for a shipping-info page */
+export async function getRateCard(
+  config: BackendConfig,
+  currency: string,
+  locale: TrackingLocale,
+  init?: RequestInit & { next?: { revalidate?: number; tags?: string[] } }
+): Promise<RateCard | null> {
+  const res = await fetch(url(config, `/store/zone-rate/services?currency=${encodeURIComponent(currency)}&lang=${locale}`), {
+    headers: { "x-publishable-api-key": config.publishableKey, "accept-language": locale },
+    ...init,
+  }).catch(() => null)
+  return res?.ok ? res.json() : null
 }

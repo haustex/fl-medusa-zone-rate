@@ -38,6 +38,12 @@ All notable changes to `medusa-fulfillment-zone-rate`. The format follows
   the customer's own order shipments and photos. Admin API: list/search/filter, summary (per status, late, shipped
   today), detail, status update, bulk update, carrier details, photo upload.
 
+### Storefront
+
+- Tracking core (`src/storefront`): lookup form, live tracking card (SSE + polling), timeline, order shipments;
+  `getRateCard` for shipping-info pages (`GET /store/zone-rate/services`, per-kg rates converted at the fixed rate).
+- DTC Starter installer (`examples/dtc-starter/install.mjs`): pages, relays, `config.ts` kept on re-install.
+
 ### Admin
 
 - "Shipping rates" page: rates, zones and exchange rate; incomplete variants report with CSV export; rejection log.
