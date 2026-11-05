@@ -35,7 +35,7 @@ export default defineMiddlewares({
     {
       matcher: "/admin/zone-rate/shipments/:id/photos",
       method: "POST",
-      bodyParser: { sizeLimit: "8mb" },
+      bodyParser: { sizeLimit: "15mb" },
       middlewares: [validateAndTransformBody(PostAdminShipmentPhoto)],
     },
     { matcher: "/store/zone-rate/track/:number", method: "GET", middlewares: [lookupRateLimit] },

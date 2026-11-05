@@ -1,4 +1,5 @@
-import { sniffImage } from "../../api/admin/zone-rate/shipments/[id]/photos/route"
+import { compressPhoto, sniffImage } from "../tracking/photos"
+import sharp from "sharp"
 import { renderShipmentEmail } from "../tracking/notifications"
 import { addEstimate, publicTrackingView, customerTrackingView, type ShipmentRecord } from "../tracking/shipments"
 import { buildStatusMachine } from "../tracking/statuses"
@@ -100,5 +101,37 @@ describe("photo type sniffing", () => {
     expect(sniffImage(Buffer.from("RIFF0000WEBPVP8 "))).toBe("image/webp")
     expect(sniffImage(Buffer.from("<svg onload=alert(1)>"))).toBeNull()
     expect(sniffImage(Buffer.from("%PDF-1.7"))).toBeNull()
+  })
+})
+
+describe("photo compression", () => {
+  it("resizes to 1600 px, WebP, strips EXIF/GPS, keeps orientation", async () => {
+    // 4000×3000 JPEG with EXIF (orientation 6 = rotate 90°) and GPS-like metadata
+    const jpeg = await sharp({ create: { width: 4000, height: 3000, channels: 3, background: "#8b5e3c" } })
+      .jpeg()
+      .withExif({ IFD0: { Make: "PhoneCo", Model: "X1" }, IFD3: { GPSLatitudeRef: "S", GPSLatitude: "6/1 35/1 0/1" } } as never)
+      .withMetadata({ orientation: 6 })
+      .toBuffer()
+    expect((await sharp(jpeg).metadata()).exif).toBeDefined()
+    const out = await compressPhoto(jpeg)
+    const meta = await sharp(out.data).metadata()
+    expect(meta.format).toBe("webp")
+    expect(Math.max(meta.width!, meta.height!)).toBe(1600)
+    expect(meta.width).toBe(1200) // rotated upright: portrait
+    expect(meta.exif).toBeUndefined()
+    expect(meta.icc).toBeUndefined()
+    expect(out.data.toString("latin1")).not.toMatch(/PhoneCo|GPS/)
+  })
+
+  it("never enlarges small photos", async () => {
+    const png = await sharp({ create: { width: 300, height: 200, channels: 4, background: "#fff" } }).png().toBuffer()
+    const out = await compressPhoto(png)
+    expect([out.width, out.height]).toEqual([300, 200])
+  })
+
+  it("refuses non-images, corrupt images and > 10 MB", async () => {
+    await expect(compressPhoto(Buffer.from("<svg onload=alert(1)>"))).rejects.toThrow(/JPEG, PNG or WebP/)
+    await expect(compressPhoto(Buffer.concat([Buffer.from([0xff, 0xd8, 0xff]), Buffer.alloc(50)]))).rejects.toThrow(/Could not read/)
+    await expect(compressPhoto(Buffer.alloc(10 * 1024 * 1024 + 1))).rejects.toThrow(/10 MB/)
   })
 })

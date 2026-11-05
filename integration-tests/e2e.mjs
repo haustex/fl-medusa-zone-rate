@@ -324,12 +324,14 @@ async function trackingChecks({ store, admin, jt }) {
   const png = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
   r = await api("POST", `/admin/zone-rate/shipments/${shipment.id}/photos`, { headers: admin, body: { data_url: png } })
   const photo = r.json.photo
-  check("photo upload (type from content)", r.status === 200 && photo?.mime_type === "image/png", r.json)
+  check("photo upload stored as WebP", r.status === 200 && photo?.mime_type === "image/webp", r.json)
   r = await api("POST", `/admin/zone-rate/shipments/${shipment.id}/photos`, { headers: admin, body: { data_url: "data:image/png;base64,PHNjcmlwdD4=" } })
   check("non-image refused", r.status === 400, r.status)
   const img = await fetch(`${BASE}/admin/zone-rate/photos/${photo?.id}`, { headers: admin })
   check("photo served to admins with nosniff", img.status === 200 && img.headers.get("x-content-type-options") === "nosniff", img.status)
 
+  r = await status(shipment.id, { status: "terkirim", photo_ids: Array(6).fill(photo?.id) })
+  check("more than 5 photos per update refused", r.status === 400, r.status)
   r = await status(shipment.id, { status: "terkirim", location: "Semarang", photo_ids: [photo?.id], public: true })
   check("transit → terkirim", r.status === 200 && r.json.shipment.delivered_at, r.json)
   const ord2 = await api("GET", `/admin/orders/${order.id}?fields=fulfillment_status`, { headers: admin })

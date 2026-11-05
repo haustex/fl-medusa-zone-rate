@@ -7,7 +7,7 @@ const statusFields = {
   location: z.string().trim().max(200).nullish(),
   occurred_at: z.string().datetime({ offset: true }).nullish(),
   public: z.boolean().optional(),
-  photo_ids: z.array(z.string().startsWith("zrpho_")).max(10).optional(),
+  photo_ids: z.array(z.string().startsWith("zrpho_")).max(5, "At most 5 photos per update").optional(),
 }
 const carrier = z
   .object({
@@ -35,6 +35,6 @@ export type PostAdminCreateShipmentType = z.infer<typeof PostAdminCreateShipment
 export const PostAdminUpdateShipment = z.object({ carrier: carrier.unwrap() })
 export type PostAdminUpdateShipmentType = z.infer<typeof PostAdminUpdateShipment>
 
-/** Photos as data URLs (JPEG, PNG or WebP), up to 5 MB after decoding */
-export const PostAdminShipmentPhoto = z.object({ data_url: z.string().max(7_200_000) })
+/** Photos as data URLs (JPEG, PNG or WebP), up to 10 MB decoded (≈13.4 MB as base64) */
+export const PostAdminShipmentPhoto = z.object({ data_url: z.string().max(14_000_000, "Photo is larger than 10 MB") })
 export type PostAdminShipmentPhotoType = z.infer<typeof PostAdminShipmentPhoto>
