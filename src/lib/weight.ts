@@ -102,3 +102,25 @@ export function chargeableWeight(
     chargeable_kg: Number(kg),
   }
 }
+
+/**
+ * Per-line package: `line_item.metadata.zone_rate_package` = { weight, length, width, height } per unit, in the
+ * config's units. For lines without a variant (e.g. a custom item on a draft order) or to override the variant.
+ * Only positive finite numbers count; anything else falls through to the variant/product values.
+ */
+export const LINE_PACKAGE_KEY = "zone_rate_package"
+
+export function linePackage(metadata: Record<string, unknown> | null | undefined): {
+  weight: number | null
+  length: number | null
+  width: number | null
+  height: number | null
+} {
+  const raw = metadata?.[LINE_PACKAGE_KEY]
+  const p = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {}
+  const pos = (v: unknown) => {
+    const n = typeof v === "string" && v.trim() !== "" ? Number(v) : v
+    return typeof n === "number" && Number.isFinite(n) && n > 0 ? n : null
+  }
+  return { weight: pos(p.weight), length: pos(p.length), width: pos(p.width), height: pos(p.height) }
+}

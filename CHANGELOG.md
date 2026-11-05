@@ -5,6 +5,14 @@ All notable changes to `medusa-fulfillment-zone-rate`. The format follows
 
 ## [Unreleased]
 
+## [0.3.0]
+
+### Added
+
+- Per-line package: `line_item.metadata.zone_rate_package` (`weight`, `length`, `width`, `height` per unit) prices
+  lines without a variant, such as custom items on a draft order, and overrides the variant's values for that line.
+  The tracking snapshot uses the same values. Lines without it behave exactly as before.
+
 ## [0.2.1]
 
 ### Fixed

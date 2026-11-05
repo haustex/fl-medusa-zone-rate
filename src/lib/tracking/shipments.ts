@@ -9,6 +9,7 @@ import {
 import { resolveConfig } from "../config"
 import { getProviderConfig, getTrackingOptions } from "../plugin-options"
 import { quote } from "../quote"
+import { linePackage } from "../weight"
 import type { Estimate, Locale, QuoteItem } from "../types"
 import { shipmentHub } from "./realtime"
 import { buildStatusMachine, type StatusMachine } from "./statuses"
@@ -163,6 +164,7 @@ const ORDER_FIELDS = [
   "items.variant_id",
   "items.product_id",
   "items.requires_shipping",
+  "items.metadata",
   "items.variant.weight",
   "items.variant.length",
   "items.variant.width",
@@ -240,16 +242,19 @@ export async function createShipmentForOrder(
       estimate = config.services.get(serviceId)?.estimate ?? null
       const items: QuoteItem[] = (order.items ?? [])
         .filter((i: any) => i.requires_shipping !== false)
-        .map((i: any) => ({
-          variant_id: i.variant_id ?? i.id,
-          product_id: i.product_id,
-          title: i.product_title ?? i.title,
-          quantity: num(i.quantity ?? i.detail?.quantity),
-          weight: i.variant?.weight ?? null,
-          length: i.variant?.length ?? null,
-          width: i.variant?.width ?? null,
-          height: i.variant?.height ?? null,
-        }))
+        .map((i: any) => {
+          const pkg = linePackage(i.metadata)
+          return {
+            variant_id: i.variant_id ?? i.id,
+            product_id: i.product_id,
+            title: i.product_title ?? i.title,
+            quantity: num(i.quantity ?? i.detail?.quantity),
+            weight: pkg.weight ?? i.variant?.weight ?? null,
+            length: pkg.length ?? i.variant?.length ?? null,
+            width: pkg.width ?? i.variant?.width ?? null,
+            height: pkg.height ?? i.variant?.height ?? null,
+          }
+        })
       const q = quote(config, {
         service_id: serviceId,
         currency_code: order.currency_code,

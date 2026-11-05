@@ -126,6 +126,35 @@ describe("ZoneRateProviderService", () => {
     expect(price.calculated_amount).toBe(60000)
   })
 
+  it("prices a custom line without a variant from metadata.zone_rate_package", async () => {
+    const { provider, rejections } = make()
+    const custom = {
+      id: "item_c",
+      quantity: 2,
+      title: "Meja makan jati custom",
+      requires_shipping: true,
+      metadata: { zone_rate_package: { weight: 45000, length: 190, width: 100, height: 20 } },
+    }
+    // per unit: 190×100×20 / 6000 = 63.4 kg volumetric > 45 kg → ×2 = 126.7 → 127 kg × Rp30.000
+    const price = await provider.calculatePrice({ id: "domestic" }, {}, context({ items: [custom] }))
+    expect(price.calculated_amount).toBe(127 * 30000)
+    expect(rejections).toHaveLength(0)
+  })
+
+  it("lets the line package win over the variant, ignoring invalid values", async () => {
+    const { provider } = make()
+    const over = line({ metadata: { zone_rate_package: { weight: 5000, length: "x", width: 0, height: null } } })
+    // weight 5 kg from the package; dimensions 30×20×3 from the variant → 5 kg × Rp30.000
+    const price = await provider.calculatePrice({ id: "domestic" }, {}, context({ items: [over] }))
+    expect(price.calculated_amount).toBe(150000)
+  })
+
+  it("still refuses a custom line without a package", async () => {
+    const { provider } = make()
+    const custom = { id: "item_c", quantity: 1, title: "Lemari custom", requires_shipping: true, metadata: {} }
+    await expect(provider.calculatePrice({ id: "domestic" }, {}, context({ items: [custom] }))).rejects.toThrow(/Lemari custom/)
+  })
+
   it("skips lines that need no shipping", async () => {
     const { provider } = make()
     const digital = line({ id: "item_2", requires_shipping: false, variant: { id: "v_d", weight: null } })

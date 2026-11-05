@@ -196,6 +196,11 @@ countries, then restart Medusa. A destination may belong to only one zone per se
 **Another country by province**: `destination: "province"` matches Indonesian provinces today. For other countries
 use `destination: "country"`, or open an issue to add a province list.
 
+**Per-line package** (e.g. a custom item on a draft order, which has no variant): set
+`line_item.metadata.zone_rate_package = { weight, length, width, height }` (per unit, in the config's units). Values
+given there win over the variant's; missing or invalid ones fall through to the variant/product. The tracking
+snapshot (zone, chargeable kg) reads the same values.
+
 ### Refusals
 
 | Reason | When |

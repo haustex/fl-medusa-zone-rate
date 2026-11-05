@@ -9,6 +9,7 @@ import type {
 import { AbstractFulfillmentProviderService, ContainerRegistrationKeys, MedusaError } from "@medusajs/framework/utils"
 import type { Knex } from "@medusajs/framework/mikro-orm/knex"
 import { localize, resolveConfig, type ResolvedConfig } from "../../lib/config"
+import { linePackage } from "../../lib/weight"
 import { quote } from "../../lib/quote"
 import { recordRejection } from "../../lib/rejection-log"
 import type { QuoteItem, ZoneRateConfig } from "../../lib/types"
@@ -134,15 +135,17 @@ export default class ZoneRateProviderService extends AbstractFulfillmentProvider
     const lines = items.filter((i) => i.requires_shipping !== false)
     const out: QuoteItem[] = lines.map((i) => {
       const v = (i.variant ?? {}) as Partial<CartItem["variant"]>
+      // Per-line package (e.g. a custom item without a variant): wins over the variant's values
+      const pkg = linePackage((i as { metadata?: Record<string, unknown> | null }).metadata)
       return {
         variant_id: String(i.variant_id ?? v.id ?? i.id),
         product_id: (i.product_id as string | undefined) ?? v.product?.id ?? i.product?.id ?? null,
         title: [i.product_title ?? i.title, i.variant_title].filter(Boolean).join(" — ") || null,
         quantity: Number(i.quantity),
-        weight: v.weight ?? null,
-        length: v.length ?? null,
-        width: v.width ?? null,
-        height: v.height ?? null,
+        weight: pkg.weight ?? v.weight ?? null,
+        length: pkg.length ?? v.length ?? null,
+        width: pkg.width ?? v.width ?? null,
+        height: pkg.height ?? v.height ?? null,
         product_weight: i.product?.weight ?? null,
       }
     })
