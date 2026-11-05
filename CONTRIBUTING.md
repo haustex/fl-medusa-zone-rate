@@ -36,6 +36,9 @@ docker run -d --name zr-spike-pg -e POSTGRES_PASSWORD=spike -e POSTGRES_DB=zr_sp
 npm run build && node integration-tests/e2e.mjs
 ```
 
+The E2E script waits up to 60 s for the container (over TCP: the image's first, socket-only init server restarts). Another
+container name: `ZR_PG_CONTAINER=<name> node integration-tests/e2e.mjs`.
+
 Every Medusa command goes through `scripts/guard.mjs`, which refuses any database other than
 `127.0.0.1:55434`, any Redis other than `127.0.0.1:56381` and HTTP ports below 9500.
 

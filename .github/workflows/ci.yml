@@ -47,13 +47,18 @@ jobs:
 
       # Same container name and port as CONTRIBUTING.md; scripts/guard.mjs accepts nothing else.
       - name: Start Postgres
+        # Healthy only once the final server answers over TCP (the image's init server is socket-only and restarts)
         run: |
           docker run -d --name zr-spike-pg -e POSTGRES_PASSWORD=spike -e POSTGRES_DB=zr_spike \
+            --health-cmd "pg_isready -h 127.0.0.1 -U postgres" --health-interval 1s --health-timeout 5s --health-retries 60 \
             -p 127.0.0.1:55434:5432 postgres:17-alpine
-          for _ in $(seq 1 30); do
-            docker exec zr-spike-pg pg_isready -U postgres && break
+          for _ in $(seq 1 60); do
+            [ "$(docker inspect -f '{{.State.Health.Status}}' zr-spike-pg)" = healthy ] && exit 0
             sleep 1
           done
+          echo "::error::Postgres container zr-spike-pg not healthy after 60 s"
+          docker logs zr-spike-pg | tail -30
+          exit 1
 
       - name: E2E
         run: node integration-tests/e2e.mjs

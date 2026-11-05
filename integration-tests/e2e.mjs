@@ -5,6 +5,10 @@
 //   docker run -d --name zr-spike-pg -e POSTGRES_PASSWORD=spike -e POSTGRES_DB=zr_spike -p 127.0.0.1:55434:5432 postgres:17-alpine
 //   node integration-tests/e2e.mjs
 //
+// ZR_PG_CONTAINER: name of the Postgres container (default zr-spike-pg). The script waits up to 60 s for it: a fresh
+// postgres image first runs a temporary, socket-only server for its init scripts and restarts, so a socket check can
+// pass and the next command still fail. Readiness and every psql call therefore go over TCP (127.0.0.1).
+//
 // Every medusa command goes through scripts/guard.mjs (zr-spike-* containers and ports 9500+ only).
 import { spawn, spawnSync } from "node:child_process"
 import fs from "node:fs"
@@ -18,6 +22,8 @@ const STATE_DIR = path.join(HERE, ".state")
 const GUARD = path.join(PLUGIN_DIR, "scripts/guard.mjs")
 const MEDUSA = path.join(PLUGIN_DIR, "node_modules/.bin/medusa")
 const DB_NAME = "zr_e2e"
+const PG_CONTAINER = process.env.ZR_PG_CONTAINER || "zr-spike-pg"
+const PG_WAIT_S = 60
 const PORT = 9500
 const BASE = `http://127.0.0.1:${PORT}`
 const ADMIN = { email: "admin@e2e.test", password: "e2e-password-123" }
@@ -51,7 +57,26 @@ function linkNodeModules() {
 }
 
 function psql(sql) {
-  run("docker", ["exec", "zr-spike-pg", "psql", "-U", "postgres", "-v", "ON_ERROR_STOP=1", "-c", sql])
+  run("docker", ["exec", PG_CONTAINER, "psql", "-h", "127.0.0.1", "-U", "postgres", "-v", "ON_ERROR_STOP=1", "-c", sql])
+}
+
+/** Waits until the container's final server answers over TCP (see the header), at most PG_WAIT_S seconds */
+async function waitForPostgres() {
+  const started = Date.now()
+  let last = ""
+  while (Date.now() - started < PG_WAIT_S * 1000) {
+    const ready = spawnSync("docker", ["exec", PG_CONTAINER, "pg_isready", "-h", "127.0.0.1", "-U", "postgres"], { encoding: "utf8" })
+    if (ready.status === 0) {
+      const q = spawnSync("docker", ["exec", PG_CONTAINER, "psql", "-h", "127.0.0.1", "-U", "postgres", "-tAc", "select 1"], { encoding: "utf8" })
+      if (q.status === 0 && q.stdout.trim() === "1") return
+      last = (q.stderr || q.stdout).trim()
+    } else last = (ready.stderr || ready.stdout).trim()
+    await new Promise((r) => setTimeout(r, 1000))
+  }
+  throw new Error(
+    `Postgres container "${PG_CONTAINER}" not ready after ${PG_WAIT_S} s (last: ${last || "no answer"}). ` +
+      `Start it as in the header of this file, or set ZR_PG_CONTAINER.`
+  )
 }
 
 let failures = 0
@@ -84,6 +109,7 @@ async function main() {
   }
   fs.mkdirSync(STATE_DIR, { recursive: true })
   linkNodeModules()
+  await waitForPostgres()
   psql(`DROP DATABASE IF EXISTS ${DB_NAME} WITH (FORCE)`)
   psql(`CREATE DATABASE ${DB_NAME}`)
   guarded("db:migrate")
