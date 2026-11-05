@@ -1,11 +1,11 @@
 import path from "node:path"
 import { defineConfig } from "@medusajs/framework/utils"
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const shipping = require(path.resolve(__dirname, "../../examples/shipping.config.haus-kayu")).default
 
 // Test app for the E2E suite. Only started through scripts/guard.mjs, which on
 // the Haus Kayu host allows nothing but the zr-spike-* containers and ports 9500+.
 const pluginDir = process.env.ZR_PLUGIN_DIR || path.resolve(__dirname, "../..")
+// The compiled example (npm run build), so this also works from the app's own build
+const shipping = require(path.join(pluginDir, ".medusa/server/examples/shipping.config.haus-kayu.js")).default
 
 module.exports = defineConfig({
   projectConfig: {

@@ -34,6 +34,8 @@ export type TrackingOptions = {
    * server. Default: env ZONE_RATE_PROXY_SECRET; unset trusts no header.
    */
   trustedProxySecret?: string
+  /** Sender block of the A6 label. Default: the store name and the first stock location's address. */
+  label?: { senderName?: string; senderAddress?: string[]; senderPhone?: string }
   notifications?: {
     /** E-mail the buyer on every status shown to the buyer. Default true (needs a Notification Module provider). */
     enabled?: boolean

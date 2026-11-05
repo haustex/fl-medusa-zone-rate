@@ -28,6 +28,7 @@ const env = {
   REDIS_URL: "redis://127.0.0.1:56381",
   PORT: String(PORT),
   ZR_PLUGIN_DIR: PLUGIN_DIR,
+  ZR_ADMIN: process.env.ZR_ADMIN ?? "",
   NODE_ENV: "development",
 }
 // REDIS_URL only satisfies the guard; the test app uses the in-memory event bus and workflow engine
@@ -91,8 +92,16 @@ async function main() {
   guarded("user", "-e", ADMIN.email, "-p", ADMIN.password)
   const seed = JSON.parse(fs.readFileSync(seedOut, "utf8"))
 
+  // ZR_ADMIN=1: build the app with the Admin and serve it from the build (for UI checks/screenshots)
+  let serverDir = APP_DIR
+  if (process.env.ZR_ADMIN === "1") {
+    guarded("build")
+    serverDir = path.join(APP_DIR, ".medusa/server")
+    fs.rmSync(path.join(serverDir, "node_modules"), { recursive: true, force: true })
+    fs.symlinkSync(path.join(APP_DIR, "node_modules"), path.join(serverDir, "node_modules"))
+  }
   const log = fs.openSync(path.join(STATE_DIR, "server.log"), "w")
-  const server = spawn("node", [GUARD, MEDUSA, "start"], { cwd: APP_DIR, env, stdio: ["ignore", log, log], detached: true })
+  const server = spawn("node", [GUARD, MEDUSA, "start"], { cwd: serverDir, env, stdio: ["ignore", log, log], detached: true })
   try {
     for (let i = 0; ; i++) {
       try {
@@ -102,6 +111,12 @@ async function main() {
       await new Promise((r) => setTimeout(r, 1000))
     }
     await checks(seed)
+    if (process.env.ZR_KEEP === "1") {
+      fs.writeFileSync(path.join(STATE_DIR, "server.pid"), String(server.pid))
+      console.log(`\nserver kept running on ${BASE} (pid ${server.pid}); stop with: kill -- -${server.pid}`)
+      console.log(`\n${passes} passed, ${failures} failed`)
+      process.exit(failures ? 1 : 0)
+    }
   } finally {
     try {
       process.kill(-server.pid, "SIGTERM")
