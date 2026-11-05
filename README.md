@@ -9,6 +9,14 @@ mobile-first Admin, A6 labels).
 
 **Status:** 0.1.0 in development, not published yet; tested on Medusa 2.19 and 2.22, running on hauskayu.com.
 
+| Checkout | Admin (phone) | Tracking page |
+| --- | --- | --- |
+| ![Calculated rate at checkout](docs/screenshots/checkout-domestic.png) | ![Updating a shipment from a phone](docs/screenshots/admin-status-update-mobile.png) | ![Public tracking page](docs/screenshots/storefront-tracking-id.png) |
+
+| A6 label | Packing slip | International checkout |
+| --- | --- | --- |
+| ![A6 label with barcode and QR](docs/screenshots/label-a6.png) | ![Packing slip](docs/screenshots/packing-slip.png) | ![Air and sea freight in USD](docs/screenshots/checkout-international.png) |
+
 [English](#english) · [Bahasa Indonesia](#bahasa-indonesia)
 
 ---
