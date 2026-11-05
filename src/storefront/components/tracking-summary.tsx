@@ -38,7 +38,8 @@ export function TrackingSummary({
     <div className="flex flex-col gap-y-4">
       <div className="flex flex-col gap-y-1">
         <span className={c.number} data-testid="tracking-number">{shipment.tracking_number}</span>
-        <span className={shipment.final ? c.statusFinal : c.status} data-testid="tracking-status" aria-live="polite">
+        {/* statusFinal = delivered; other final statuses (canceled, returned) keep the plain style */}
+        <span className={shipment.delivered_at ? c.statusFinal : c.status} data-testid="tracking-status" aria-live="polite">
           {shipment.status_label}
         </span>
       </div>
@@ -60,7 +61,7 @@ export function TrackingSummary({
             <dt className={c.factLabel}>{t.deliveredAt}</dt>
             <dd className={c.factValue}>{formatDate(shipment.delivered_at, locale, timeZone)}</dd>
           </div>
-        ) : shipment.estimated_delivery_at ? (
+        ) : shipment.final ? null : shipment.estimated_delivery_at ? (
           <div className={c.fact}>
             <dt className={c.factLabel}>{t.expected}</dt>
             <dd className={c.factValue}>{formatDate(shipment.estimated_delivery_at, locale, timeZone)}</dd>

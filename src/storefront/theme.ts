@@ -51,7 +51,7 @@ export const defaultTheme: TrackingTheme = {
   muted: "txt-small text-ui-fg-muted",
   error: "txt-small text-ui-fg-error",
   form: "flex flex-col gap-2 sm:flex-row",
-  input: "h-11 flex-1 rounded-md border border-ui-border-base bg-ui-bg-field px-3 font-mono uppercase tracking-wide",
+  input: "h-11 w-full sm:w-auto sm:flex-1 rounded-md border border-ui-border-base bg-ui-bg-field px-3 font-mono uppercase tracking-wide",
   button: "inline-flex h-11 items-center justify-center rounded-md bg-ui-button-inverted px-5 txt-compact-medium-plus text-ui-fg-on-inverted hover:bg-ui-button-inverted-hover",
   mono: "font-mono tracking-wide",
   number: "font-mono text-lg tracking-wide text-ui-fg-base",
