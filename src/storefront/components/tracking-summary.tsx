@@ -10,6 +10,7 @@ export function TrackingSummary({
   theme,
   provinceName,
   countryName,
+  placeNames,
 }: {
   shipment: Pick<PublicShipment, "tracking_number" | "status_label" | "final" | "estimate" | "shipped_at" | "estimated_delivery_at" | "delivered_at" | "carrier"> & {
     destination: { city?: string | null; province?: string | null; country_code?: string | null } | null
@@ -19,11 +20,18 @@ export function TrackingSummary({
   theme?: Partial<TrackingTheme>
   provinceName?: (code: string) => string
   countryName?: (code: string) => string
+  /** Alternative to the functions when rendered from a client component */
+  placeNames?: Record<string, string>
 }) {
   const t = LABELS[locale]
   const c = mergeTheme(theme)
   const d = shipment.destination ?? {}
-  const place = [d.city, d.province ? provinceName?.(d.province) ?? d.province : null, d.country_code ? countryName?.(d.country_code) ?? d.country_code.toUpperCase() : null]
+  const name = (code: string, fn?: (c: string) => string) => fn?.(code) ?? placeNames?.[code] ?? null
+  const place = [
+    d.city,
+    d.province ? name(d.province, provinceName) ?? d.province : null,
+    d.country_code ? name(d.country_code, countryName) ?? d.country_code.toUpperCase() : null,
+  ]
     .filter(Boolean)
     .join(", ")
   return (

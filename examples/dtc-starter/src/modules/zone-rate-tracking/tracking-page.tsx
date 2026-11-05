@@ -12,6 +12,10 @@ import { trackingConfig } from "./config"
  * /{path}?number=…   (form submit) → redirect to /{path}/{NUMBER}
  * /{path}/{number}   live tracking card
  */
+/** Functions cannot cross into client components: resolve the one province name here */
+const placeNames = (province: string | null): Record<string, string> | undefined =>
+  province && trackingConfig.provinceName ? { [province]: trackingConfig.provinceName(province) } : undefined
+
 export async function TrackingPage({ countryCode, number, query }: { countryCode: string; number?: string; query?: string }) {
   const locale = trackingConfig.locale(countryCode)
   const base = trackingConfig.path(countryCode)
@@ -36,7 +40,7 @@ export async function TrackingPage({ countryCode, number, query }: { countryCode
           locale={locale}
           timeZone={trackingConfig.timeZone}
           theme={trackingConfig.theme}
-          provinceName={trackingConfig.provinceName}
+          placeNames={placeNames(result.shipment.destination.province)}
         />
       )
     } else {

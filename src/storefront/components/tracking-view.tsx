@@ -22,8 +22,7 @@ export function TrackingView({
   locale,
   timeZone,
   theme,
-  provinceName,
-  countryName,
+  placeNames,
 }: {
   initial: PublicShipment
   fetchUrl: string
@@ -31,8 +30,8 @@ export function TrackingView({
   locale: TrackingLocale
   timeZone?: string
   theme?: Partial<TrackingTheme>
-  provinceName?: (code: string) => string
-  countryName?: (code: string) => string
+  /** Display names of province/country codes (plain data: this is a client component) */
+  placeNames?: Record<string, string>
 }) {
   const t = LABELS[locale]
   const c = mergeTheme(theme)
@@ -100,8 +99,7 @@ export function TrackingView({
           locale={locale}
           timeZone={timeZone}
           theme={theme}
-          provinceName={provinceName}
-          countryName={countryName}
+          placeNames={placeNames}
         />
         {!shipment.final && (
           <span className={c.live} role="status" data-testid="tracking-live">
