@@ -107,7 +107,7 @@ export type TrackingInfo = {
   initial: string
   time_zone: string
   statuses: StatusInfo[]
-  sender: { name: string | null; lines: string[] | null; phone: string | null }
+  sender: { name: string | null; lines: string[] | null; phone: string | null; logo_url: string | null }
 }
 
 export type ShipmentEvent = {

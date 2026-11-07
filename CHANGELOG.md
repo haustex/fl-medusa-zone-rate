@@ -5,6 +5,14 @@ All notable changes to `medusa-fulfillment-zone-rate`. The format follows
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-11-07
+
+### Added
+
+- Plugin option `brand.logoUrl`: an absolute http(s) URL of the store's logo, printed on the A6 label (sender box)
+  and the packing slip header in place of the store name. Default none: the store name stays as text, so nothing
+  changes for existing installs. Other schemes and relative paths are ignored.
+
 ## [0.3.1] - 2026-11-05
 
 Same code as 0.3.0, published from GitHub Actions with npm provenance. 0.3.0 was published by hand (no provenance)

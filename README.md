@@ -92,6 +92,7 @@ Plugin options (`plugins: [{ resolve: "medusa-fulfillment-zone-rate", options }]
 ```ts
 {
   showCredit: true,
+  // brand: { logoUrl: "https://shop.example/brand/logo.png" }, // printed on the A6 label + packing slip; default: store name as text
   tracking: {
     prefix: "HK",
     timeZone: "Asia/Jakarta",

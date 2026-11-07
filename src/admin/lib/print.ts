@@ -12,6 +12,12 @@ const T = {
   id: { from: "Dari", to: "Kepada", order: "Pesanan", weight: "Berat", service: "Layanan", scan: "Pindai untuk lacak", slip: "Packing slip", product: "Produk", variant: "Varian", qty: "Jml", sku: "SKU", checked: "Dikemas oleh", date: "Tanggal", tracking: "Nomor resi", status: "Status" },
 }
 
+/** Store identity for the printed documents: the logo (plugin option brand.logoUrl) or the store name as text */
+function brand(sender: TrackingInfo["sender"] | undefined, logoHeightMm: number) {
+  if (sender?.logo_url) return `<img class="logo" src="${esc(sender.logo_url)}" alt="${esc(sender.name)}" style="height:${logoHeightMm}mm">`
+  return esc(sender?.name)
+}
+
 function recipient(s: Shipment) {
   const d = s.destination ?? {}
   return [
@@ -28,10 +34,11 @@ function recipient(s: Shipment) {
 const BASE_CSS = `
 *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#000}
 .muted{color:#444}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.logo{display:block;max-width:100%;margin:0.5mm 0 1.2mm;object-fit:contain;object-position:left}
 @media screen{body{background:#eee}.page{margin:16px auto;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.2)}}
 `
 
-/** A6 (105 × 148 mm) shipping label: sender, recipient, tracking number with Code 128 and a QR to the tracking page */
+/** A6 (105 × 148 mm) shipping label: sender (logo or name), recipient, tracking number with Code 128 and a QR to the tracking page */
 export async function labelHtml(s: Shipment, info: TrackingInfo | undefined, l: L, serviceName?: string | null): Promise<string> {
   const t = T[l]
   // Rendered on the server (sanitized SVG from the qrcode package)
@@ -51,7 +58,7 @@ export async function labelHtml(s: Shipment, info: TrackingInfo | undefined, l: 
 .num{font-size:15pt;font-weight:800;letter-spacing:.06em}
 .bottom{display:flex;gap:3mm;align-items:center}.qr{width:20mm;height:20mm;flex:none}.qr svg{width:100%;height:100%}
 </style></head><body><div class="page">
-<div class="box from"><div class="lbl">${t.from}</div><b>${esc(sender?.name)}</b><br>${(sender?.lines ?? []).map(esc).join("<br>")}${sender?.phone ? `<br>${esc(sender.phone)}` : ""}</div>
+<div class="box from"><div class="lbl">${t.from}</div><b>${brand(sender, 4)}</b>${sender?.logo_url ? "" : "<br>"}${(sender?.lines ?? []).map(esc).join("<br>")}${sender?.phone ? `<br>${esc(sender.phone)}` : ""}</div>
 <div class="box to"><div class="lbl">${t.to}</div><div class="name">${esc(recipient(s)[0])}</div>${recipient(s).slice(1).map(esc).join("<br>")}</div>
 <div class="meta"><div>${t.order}<b>#${esc(s.order_display_id ?? "")}</b></div><div>${t.service}<b>${service}</b></div><div>${t.weight}<b>${s.chargeable_kg ?? "–"} kg</b></div></div>
 <div class="code">${code128Svg(s.tracking_number, { height: 60, module: 2 }).replace("<svg ", '<svg class="bar" preserveAspectRatio="none" ')}<div class="num mono">${esc(s.tracking_number)}</div></div>
@@ -71,7 +78,7 @@ table{width:100%;border-collapse:collapse;margin-top:6mm;font-size:10pt}th,td{te
 th{font-size:8pt;text-transform:uppercase;letter-spacing:.06em}td.q,th.q{text-align:right;width:14mm}td.c{width:8mm}
 .sign{margin-top:12mm;font-size:9pt}.code svg{height:12mm;width:60mm}
 </style></head><body><div class="page">
-<div class="row"><div><h1>${t.slip}</h1><div class="muted">${esc(info?.sender?.name)}</div></div>
+<div class="row"><div><h1>${t.slip}</h1><div class="muted">${brand(info?.sender, 6)}</div></div>
 <div style="text-align:right">${t.order} <b>#${esc(s.order_display_id)}</b><br>${t.date}: ${esc(new Date(s.order?.created_at ?? s.created_at).toLocaleDateString(l === "id" ? "id-ID" : "en-US"))}<br>${t.status}: ${esc(statusLabel(info, s.status, l))}</div></div>
 <div class="row" style="margin-top:6mm"><div><b>${t.to}</b><br>${recipient(s).map(esc).join("<br>")}</div>
 <div class="code" style="text-align:right"><b>${t.tracking}</b><br>${code128Svg(s.tracking_number, { height: 40, module: 1 })}<div class="mono">${esc(s.tracking_number)}</div></div></div>

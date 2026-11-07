@@ -11,7 +11,22 @@ export const PACKAGE_NAME = "medusa-fulfillment-zone-rate"
 export type ZoneRatePluginOptions = {
   /** Show the small "by Haus Kayu" credit under the plugin's Admin pages. Default true. */
   showCredit?: boolean
+  brand?: BrandOptions
   tracking?: TrackingOptions
+}
+
+export type BrandOptions = {
+  /**
+   * Absolute http(s) URL of the store's logo (PNG, JPEG or SVG), printed on the A6 label and the packing slip in
+   * place of the store name. Default: none, the store name is printed as text.
+   */
+  logoUrl?: string
+}
+
+/** The logo URL when it is an absolute http(s) URL, otherwise null (printed documents never get another scheme). */
+export function getBrandLogoUrl(container: MedusaContainer): string | null {
+  const url = getPluginOptions(container).brand?.logoUrl?.trim()
+  return url && /^https?:\/\/\S+$/i.test(url) ? url : null
 }
 
 export type TrackingOptions = {

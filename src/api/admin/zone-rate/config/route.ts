@@ -3,7 +3,7 @@ import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import { getTrackingOptions } from "../../../../lib/plugin-options"
 import { statusMachine } from "../../../../lib/tracking/shipments"
 import { localize, resolveConfig } from "../../../../lib/config"
-import { getPluginOptions, getProviderConfig } from "../../../../lib/plugin-options"
+import { getBrandLogoUrl, getPluginOptions, getProviderConfig } from "../../../../lib/plugin-options"
 import { getProvince } from "../../../../lib/provinces"
 
 /** Rates, zones and the exchange rate as configured, for the Admin page (read-only) */
@@ -47,15 +47,16 @@ export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) 
   })
 }
 
-/** Statuses (labels, allowed next) and the sender block of the shipping label */
+/** Statuses (labels, allowed next) and the sender block (name or logo, address) of the shipping label and packing slip */
 async function trackingInfo(req: AuthenticatedMedusaRequest) {
   const machine = statusMachine(req.scope)
   const opts = getTrackingOptions(req.scope)
   const label = getPluginOptions(req.scope).tracking?.label ?? {}
-  let sender = { name: label.senderName ?? null, lines: label.senderAddress ?? null, phone: label.senderPhone ?? null } as {
+  let sender = { name: label.senderName ?? null, lines: label.senderAddress ?? null, phone: label.senderPhone ?? null, logo_url: getBrandLogoUrl(req.scope) } as {
     name: string | null
     lines: string[] | null
     phone: string | null
+    logo_url: string | null
   }
   if (!sender.name || !sender.lines) {
     try {
@@ -65,6 +66,7 @@ async function trackingInfo(req: AuthenticatedMedusaRequest) {
       const a = (data[0] as { address?: Record<string, string | null> } | undefined)?.address ?? {}
       const province = a.province ? getProvince(a.province)?.name ?? a.province : null
       sender = {
+        ...sender,
         name: sender.name ?? store?.name ?? null,
         lines: sender.lines ?? [a.address_1, a.address_2, [a.city, province].filter(Boolean).join(", "), [a.postal_code, a.country_code?.toUpperCase()].filter(Boolean).join(" ")].filter((l): l is string => !!l),
         phone: sender.phone ?? a.phone ?? null,
