@@ -1,13 +1,57 @@
-# Zone Rate & Tracking — by Haus Kayu
+<p align="center">
+  <a href="https://hauskayu.com">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="docs/logo-dark.svg">
+      <img src="docs/logo.svg" alt="Haus Kayu" width="260">
+    </picture>
+  </a>
+</p>
 
-Calculated shipping for Medusa v2 (price per kilogram by destination zone, on the chargeable weight: the larger of
-actual and volumetric weight) and shipment tracking (own tracking numbers, status timeline, live tracking page,
-mobile-first Admin, A6 labels).
+# medusa-fulfillment-zone-rate
 
-> Ongkir terhitung untuk Medusa v2: tarif per kg menurut zona tujuan, dari berat tagih (yang lebih besar antara berat
-> aktual dan berat volume). Dibuat dan dipakai sendiri oleh Haus Kayu.
+**Calculated shipping for Medusa v2: price per kilogram by destination zone on the chargeable weight (the larger of
+actual and volumetric), plus shipment tracking with own tracking numbers, a status timeline, a public tracking page,
+a mobile-first Admin and A6 labels.** Built and used in production by Haus Kayu.
+<br>Ongkir terhitung untuk Medusa v2: tarif per kg menurut zona tujuan, dari berat tagih (yang lebih besar antara berat
+aktual dan berat volume), plus pelacakan kiriman. Dibuat dan dipakai sendiri oleh Haus Kayu.
 
-**Status:** 0.1.0 in development, not published yet; tested on Medusa 2.19 and 2.22, running on hauskayu.com.
+[![npm](https://img.shields.io/npm/v/medusa-fulfillment-zone-rate)](https://www.npmjs.com/package/medusa-fulfillment-zone-rate)
+[![CI](https://github.com/haustex/fl-medusa-zone-rate/actions/workflows/ci.yml/badge.svg)](https://github.com/haustex/fl-medusa-zone-rate/actions/workflows/ci.yml)
+[![Medusa](https://img.shields.io/badge/Medusa-2.19%20%E2%80%93%202.22-7c3aed)](https://medusajs.com)
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+
+### Compatibility
+
+| Plugin | Medusa | Node | Tested in CI on |
+| --- | --- | --- | --- |
+| 0.3.x | 2.19.0 or newer 2.x (`^2.19.0`) | 20.19+ or 22.12+ | Medusa 2.19.0 and 2.22.2 |
+
+### Quick start
+
+```bash
+npm install medusa-fulfillment-zone-rate
+npx medusa db:migrate
+```
+
+```ts
+// medusa-config.ts
+import shipping from "./shipping.config"   // services, zones, rates: see Config below
+
+plugins: [{ resolve: "medusa-fulfillment-zone-rate", options: {} }],
+modules: [
+  {
+    resolve: "@medusajs/medusa/fulfillment",
+    options: {
+      providers: [
+        { resolve: "medusa-fulfillment-zone-rate/providers/zone-rate", id: "zone-rate", options: shipping },
+      ],
+    },
+  },
+],
+```
+
+In the Admin, add the **zone-rate** provider to your stock location and create one shipping option per service with
+price type **Calculated**. Full steps: [Install](#install) · [Config](#config) · [Tracking](#tracking).
 
 | Checkout | Admin (phone) | Tracking page |
 | --- | --- | --- |

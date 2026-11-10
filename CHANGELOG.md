@@ -5,6 +5,15 @@ All notable changes to `medusa-fulfillment-zone-rate`. The format follows
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-11-10
+
+### Changed
+
+- npm metadata and README only, no code changes: category keyword is now `medusa-plugin-shipping` (the one Medusa
+  lists for shipping integrations; `medusa-plugin-fulfillment` is not a listed category), refined `description`,
+  Haus Kayu logo, npm badge, compatibility table and quick start at the top of the README; the stale "not published
+  yet" status line is gone.
+
 ## [0.3.2] - 2026-11-07
 
 ### Added
