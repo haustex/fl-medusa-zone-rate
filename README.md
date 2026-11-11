@@ -191,6 +191,12 @@ Then, in the Admin (Settings → Locations & Shipping):
 2. Create one shipping option per service with **price type "Calculated"** and pick the service (e.g. "domestic")
    as the fulfillment option. The option's `data.id` is the service id.
 
+> **Note for pnpm without hoisting or a locally linked copy:** the Admin build picks up this plugin's Tailwind classes
+> through `require.resolve("medusa-fulfillment-zone-rate/admin")` from `@medusajs/admin-bundler`; if the bundler cannot resolve the package
+> (pnpm with `hoist=false`, or a plugin symlinked from outside the project), the plugin's Admin pages lose their layout.
+> npm, Yarn and pnpm's defaults are fine; otherwise install from npm (or `npm pack`) next to the bundler, or add
+> `hoist-pattern[]=medusa-fulfillment-zone-rate` to `.npmrc`.
+
 ### Config
 
 A complete example, Haus Kayu's own: [`examples/shipping.config.haus-kayu.ts`](examples/shipping.config.haus-kayu.ts).
@@ -308,6 +314,12 @@ provider **zone-rate** ke lokasi stok, lalu buat satu shipping option per layana
 
 **Menambah zona**: tambahkan entri di `zones` dengan `id` baru, `rate_per_kg`, dan daftar provinsi/negaranya, lalu
 restart Medusa. Satu tujuan hanya boleh ada di satu zona per layanan; config dicek saat start.
+
+> **Catatan untuk pnpm tanpa hoisting atau plugin yang di-symlink lokal:** build Admin mengambil class Tailwind plugin
+> ini lewat `require.resolve("medusa-fulfillment-zone-rate/admin")` dari `@medusajs/admin-bundler`; kalau bundler tidak bisa me-resolve paketnya
+> (pnpm dengan `hoist=false`, atau plugin di-symlink dari luar proyek), halaman Admin plugin kehilangan layout-nya. npm,
+> Yarn, dan pnpm bawaan aman; selain itu pasang dari npm (atau `npm pack`) di sebelah bundler, atau tambahkan
+> `hoist-pattern[]=medusa-fulfillment-zone-rate` di `.npmrc`.
 
 ---
 
