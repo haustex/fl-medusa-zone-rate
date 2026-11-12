@@ -1,6 +1,6 @@
 {
   "name": "medusa-fulfillment-zone-rate",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Calculated shipping for Medusa v2: rate per kg by destination zone on the chargeable weight (actual vs volumetric), with shipment tracking, tracking page and A6 labels — by Haus Kayu",
   "author": "Haus Kayu <dev@hauskayu.com> (https://hauskayu.com)",
   "license": "MIT",
@@ -101,7 +101,6 @@
     "@medusajs/icons": "^2.19.0",
     "@medusajs/js-sdk": "^2.19.0",
     "@medusajs/medusa": "^2.19.0",
-    "@medusajs/test-utils": "^2.19.0",
     "@medusajs/ui": "^4.2.1"
   },
   "engines": {

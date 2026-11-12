@@ -5,6 +5,13 @@ All notable changes to `medusa-fulfillment-zone-rate`. The format follows
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-11-12
+
+### Fixed
+
+- `@medusajs/test-utils` is no longer listed as a peer dependency: it is only used by the plugin's own tests
+  (it stays a devDependency), so installing the plugin no longer asks for it or warns about it.
+
 ## [0.3.3] - 2026-11-10
 
 ### Changed
